@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 use descord::prelude::*;
 
 fn main() {

@@ -1,17 +1,17 @@
 # descord
-Descord is a discord api wrapper without async/await shit.
+Descord is a discord api wrapper without async/await.
 If you want multithreading, do it yourself.
 
 ## Example
 ```rust
-use descord::*;
-use descord::intents::GatewayIntent;
+use descord::prelude::*;
 
 fn main() {
-    let token = "Discord token here";
+    dotenvy::dotenv().unwrap();
+    env_logger::init();
 
     let mut client = Client::new(
-        token,
+        &std::env::var("DISCORD_TOKEN").unwrap(),
         GatewayIntent::MessageContent | GatewayIntent::GuildMessages,
     );
 
@@ -20,20 +20,24 @@ fn main() {
 
 struct Handler;
 impl EventHandler for Handler {
-    fn ready(&self, payload: Payload) {
-        let username = payload.data["user"]["username"].as_str().unwrap();
-        let discriminator = payload.data["user"]["discriminator"].as_str().unwrap();
-
-        println!("Logged in as: {username}#{discriminator}",);
+    fn ready(&self, ready_data: ReadyData) {
+        println!(
+            "Logged in as {}#{}",
+            ready_data.user.username, ready_data.user.discriminator
+        );
     }
 
-    fn message_create(&self, payload: Payload) {
-        let author = payload.data["author"]["global_name"].as_str().unwrap();
-        let content = payload.data["content"].as_str().unwrap();
+    fn message_create(&self, message_data: MessageData) {
+        if message_data.content == "ping" {
+            message_data.reply(CreateMessageData {
+                content: "Pong! (reply)",
+                tts: false,
+            });
 
-        println!("Message received from `{author}`, message: '{content}'",)
+            message_data.send_in_channel(CreateMessageData {
+                content: "Pong!",
+                tts: false,
+            });
+        }
     }
-
-    // I'll add more later, I promise!
-}
-```
+}```
