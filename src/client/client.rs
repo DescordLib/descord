@@ -13,11 +13,15 @@ impl Client {
         Self {
             intents: intents.into(),
             token: token.to_owned(),
-            ws: WsManager::new().expect("Failed to initialize websockets"),
+            ws: WsManager::new(token).expect("Failed to initialize websockets"),
         }
     }
 
     pub fn login(&mut self, event_handler: impl EventHandler) {
-        self.ws.connect(&self.token, self.intents, event_handler);
+        self.ws.connect(self.intents, event_handler);
+    }
+
+    pub fn token(&self) -> &str {
+        &self.token
     }
 }

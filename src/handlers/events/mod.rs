@@ -1,9 +1,6 @@
 use std::str::FromStr;
 
-use crate::ws::payload::Payload;
-
-use super::EventHandler;
-
+#[derive(Debug, Clone, Copy)]
 pub enum Event {
     Hello,
     Ready,
@@ -72,17 +69,6 @@ pub enum Event {
     VoiceStateUpdate,
     VoiceServerUpdate,
     WebhooksUpdate,
-}
-
-impl Event {
-    pub fn handle(&self, handler: &impl EventHandler, data: Payload) {
-        match self {
-            Event::Ready => handler.ready(data),
-            Event::MessageCreate => handler.message_create(data),
-
-            _ => unimplemented!(),
-        }
-    }
 }
 
 impl FromStr for Event {
