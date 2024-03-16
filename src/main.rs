@@ -1,14 +1,7 @@
 #![allow(unused)]
 
-use client::Client;
-use consts::intents::GatewayIntent;
-use handlers::EventHandler;
-use ws::payload::Payload;
-
-mod client;
-mod consts;
-mod handlers;
-mod ws;
+use descord::*;
+use descord::intents::GatewayIntent;
 
 fn main() {
     dotenvy::dotenv().unwrap();
