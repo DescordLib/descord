@@ -1,43 +1,40 @@
 # descord
-Descord is a discord api wrapper without async/await.
+Descord is a discord api wrapper.
 If you want multithreading, do it yourself.
 
 ## Example
 ```rust
 use descord::prelude::*;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     dotenvy::dotenv().unwrap();
     env_logger::init();
 
-    let mut client = Client::new(
+    let client = Client::new(
         &std::env::var("DISCORD_TOKEN").unwrap(),
         GatewayIntent::MessageContent | GatewayIntent::GuildMessages,
-    );
+    ).await;
 
-    client.login(Handler);
+    client.login(Handler).await;
 }
 
 struct Handler;
+
+#[async_trait]
 impl EventHandler for Handler {
-    fn ready(&self, ready_data: ReadyData) {
+    async fn ready(&self, _: &Context, ready_data: ReadyData) {
         println!(
-            "Logged in as {}#{}",
+            "Logged in as: {}#{}",
             ready_data.user.username, ready_data.user.discriminator
         );
     }
 
-    fn message_create(&self, message_data: MessageData) {
-        if message_data.content == "ping" {
-            message_data.reply(CreateMessageData {
-                content: "Pong! (reply)",
-                tts: false,
-            });
-
-            message_data.send_in_channel(CreateMessageData {
-                content: "Pong!",
-                tts: false,
-            });
+    async fn message_create(&self, ctx: &Context, message_data: MessageData) {
+        if message_data.content == ".ping" {
+            ctx.reply(&message_data, "Pong (reply)").await;
+            ctx.send(&message_data.channel_id, "Pong").await;
         }
     }
-}```
+}
+```

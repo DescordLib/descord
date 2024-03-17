@@ -1,5 +1,13 @@
+use std::cell::RefCell;
+use std::sync::{Arc, Mutex, MutexGuard};
+
+use json::object;
+use nanoserde::SerJson;
+
+use crate::consts;
 use crate::consts::intents::GatewayIntent;
 use crate::handlers::EventHandler;
+use crate::prelude::{CreateMessageData, MessageData};
 use crate::ws::WsManager;
 
 pub struct Client {
@@ -9,16 +17,18 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new(token: &str, intents: impl Into<u32>) -> Self {
+    pub async fn new(token: &str, intents: impl Into<u32>) -> Self {
         Self {
             intents: intents.into(),
             token: token.to_owned(),
-            ws: WsManager::new(token).expect("Failed to initialize websockets"),
+            ws: WsManager::new(token)
+                .await
+                .expect("Failed to initialize websockets"),
         }
     }
 
-    pub fn login(&mut self, event_handler: impl EventHandler) {
-        self.ws.connect(self.intents, event_handler);
+    pub async fn login(&self, event_handler: impl EventHandler + std::marker::Sync + 'static) {
+        self.ws.connect(self.intents, event_handler.into()).await;
     }
 
     pub fn token(&self) -> &str {
