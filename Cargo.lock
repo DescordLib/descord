@@ -219,6 +219,7 @@ dependencies = [
  "env_logger",
  "futures-util",
  "json",
+ "lazy_static",
  "log",
  "nanoserde",
  "reqwest",
