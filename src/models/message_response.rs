@@ -5,6 +5,7 @@ use crate::utils;
 use crate::{consts, Client};
 
 use super::channel::Channel;
+use super::message_edit::MessageEditData;
 use super::{author::Author, embed::Embed, message_reference::MessageReference};
 
 #[derive(DeJson, SerJson, Clone)]
@@ -15,11 +16,13 @@ pub struct MessageResponse {
 
 #[derive(DeJson, SerJson, Clone)]
 pub struct MessageData {
+    #[nserde(default)]
     pub tts: bool,
 
     #[nserde(default)]
     pub timestamp: Option<String>,
 
+    #[nserde(default)]
     pub pinned: bool,
     pub mention_everyone: bool,
 
@@ -33,7 +36,7 @@ pub struct MessageData {
     #[nserde(default)]
     pub referenced_message: Option<MessageReference>,
 
-    pub guild_id: String,
+    pub guild_id: Option<String>,
 
     #[nserde(rename = "id")]
     pub message_id: String,
@@ -42,8 +45,8 @@ pub struct MessageData {
 }
 
 impl MessageData {
-    pub async fn reply(&self, data: impl Into<CreateMessageData>) {
-        utils::reply(&self, data).await;
+    pub async fn reply(&self, data: impl Into<CreateMessageData>) -> MessageData {
+        utils::reply(&self, data).await
     }
 
     pub async fn send_in_channel(&self, data: impl Into<CreateMessageData>) {
@@ -52,6 +55,14 @@ impl MessageData {
 
     pub async fn get_channel(&self) -> Result<Channel, Box<dyn std::error::Error>> {
         utils::get_channel(&self.channel_id).await
+    }
+
+    pub async fn delete(&self) -> bool {
+        utils::delete_message(&self.channel_id, &self.message_id).await
+    }
+
+    pub async fn edit(&self, data: impl Into<MessageEditData>) {
+        utils::edit_message(&self.channel_id, &self.message_id, data).await;
     }
 }
 
