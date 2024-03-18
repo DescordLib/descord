@@ -6,6 +6,8 @@ mod handlers;
 pub mod models;
 mod ws;
 
+pub mod utils;
+
 pub use async_trait::async_trait;
 
 pub use client::Client;
@@ -17,7 +19,7 @@ pub use ws::payload::Payload;
 pub mod prelude {
     pub use super::{
         async_trait,
-        client::Context,
+        utils,
         intents::GatewayIntent,
         models::{
             embed::*, embed_builder::EmbedBuilder, guild::Guild,

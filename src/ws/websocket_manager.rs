@@ -19,7 +19,6 @@ use tokio_tungstenite::MaybeTlsStream;
 use tokio_tungstenite::{connect_async, WebSocketStream};
 use url::Url;
 
-use crate::client::Context;
 use crate::consts::opcode::OpCode;
 use crate::consts::{self, payloads};
 use crate::handlers::events::Event;
@@ -31,7 +30,6 @@ type SocketWrite = Arc<Mutex<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>
 type SocketRead = Arc<Mutex<SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>>>;
 
 pub struct WsManager {
-    ctx: Arc<Context>,
     token: String,
     socket: (SocketWrite, SocketRead),
 }
@@ -44,7 +42,6 @@ impl WsManager {
         let (write, read) = (Arc::new(Mutex::new(write)), Arc::new(Mutex::new(read)));
 
         Ok(Self {
-            ctx: Arc::new(Context::new(token.to_string())),
             token: token.to_owned(),
             socket: (write, read),
         })
@@ -87,7 +84,6 @@ impl WsManager {
             match payload.operation_code {
                 OpCode::Dispatch => {
                     let event_handler = Arc::clone(&event_handler);
-                    let ctx = Arc::clone(&self.ctx);
 
                     info!(
                         "received {} event\npayload:{}",
@@ -100,7 +96,7 @@ impl WsManager {
                     );
 
                     tokio::spawn(async move {
-                        Self::dispatch_event(payload, event_handler, ctx).await;
+                        Self::dispatch_event(payload, event_handler).await;
                     });
                 }
 
@@ -113,18 +109,14 @@ impl WsManager {
         Ok(())
     }
 
-    async fn dispatch_event(
-        payload: Payload,
-        event_handler: Arc<impl EventHandler>,
-        ctx: Arc<Context>,
-    ) {
+    async fn dispatch_event(payload: Payload, event_handler: Arc<impl EventHandler>) {
         let event = Event::from_str(payload.type_name.as_ref().unwrap().as_str()).unwrap();
         match event {
             Event::Ready => {
                 let ready_data = ready_response::ReadyResponse::deserialize_json(&payload.raw_json)
                     .expect("Failed to parse json");
 
-                event_handler.ready(&ctx, ready_data.data).await;
+                event_handler.ready(ready_data.data).await;
 
                 // const READY_SEQ: usize = 1;
                 // if payload.sequence == Some(READY_SEQ) {
@@ -137,11 +129,29 @@ impl WsManager {
             }
 
             Event::MessageCreate => {
-                let ready_data =
+                let message_data =
                     message_response::MessageResponse::deserialize_json(&payload.raw_json)
                         .expect("Failed to parse json");
 
-                event_handler.message_create(&ctx, ready_data.data).await;
+                event_handler.message_create(message_data.data).await;
+            }
+
+            Event::MessageUpdate => {
+                let message_data =
+                    message_response::MessageResponse::deserialize_json(&payload.raw_json)
+                        .expect("Failed to parse json");
+
+                event_handler.message_update(message_data.data).await;
+            }
+
+            Event::MessageDelete => {
+                let delete_data =
+                    deleted_message_response::DeletedMessageResponse::deserialize_json(
+                        &payload.raw_json,
+                    )
+                    .expect("Failed to parse json");
+
+                event_handler.message_delete(delete_data.data).await;
             }
 
             _ => error!("{event:?} event is not implemented"),
