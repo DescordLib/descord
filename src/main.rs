@@ -33,12 +33,10 @@ impl EventHandler for Handler {
         }
 
         if data.content == "!ping" {
-            println!("pinging");
             let clock = Instant::now();
             let _ = data.get_channel().await.unwrap();
             let latency = clock.elapsed().as_millis();
 
-            println!("replying");
             data.reply(format!("Pong! {latency}ms")).await;
         }
     }
