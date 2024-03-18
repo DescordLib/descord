@@ -1,8 +1,10 @@
 use json::object;
 use nanoserde::{DeJson, SerJson};
 
+use crate::utils;
 use crate::{consts, Client};
 
+use super::channel::Channel;
 use super::{author::Author, embed::Embed, message_reference::MessageReference};
 
 #[derive(DeJson, SerJson, Clone)]
@@ -37,6 +39,20 @@ pub struct MessageData {
     pub message_id: String,
     // TODO
     // mentions, mention_roles, member, etc.
+}
+
+impl MessageData {
+    pub async fn reply(&self, data: impl Into<CreateMessageData>) {
+        utils::reply(&self, data).await;
+    }
+
+    pub async fn send_in_channel(&self, data: impl Into<CreateMessageData>) {
+        utils::send(&self.channel_id, data).await;
+    }
+
+    pub async fn get_channel(&self) -> Result<Channel, Box<dyn std::error::Error>> {
+        utils::get_channel(&self.channel_id).await
+    }
 }
 
 #[derive(Default, Debug, SerJson)]

@@ -13,6 +13,8 @@ pub struct Embed {
     pub provider: Option<EmbedProvider>,
     pub author: Option<EmbedAuthor>,
     pub video: Option<EmbedVideo>,
+
+    #[nserde(default)]
     pub fields: Vec<EmbedField>,
 }
 

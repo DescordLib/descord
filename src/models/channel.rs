@@ -1,4 +1,7 @@
 use nanoserde::{DeJson, SerJson};
+use crate::utils;
+
+use super::message_response::CreateMessageData;
 
 #[derive(DeJson, SerJson)]
 pub struct Channel {
@@ -15,4 +18,10 @@ pub struct Channel {
 
     #[nserde(rename = "type")]
     pub channel_type: usize,
+}
+
+impl Channel {
+    pub async fn send_message(&self, data: impl Into<CreateMessageData>) {
+        utils::send(&self.id, data);
+    }
 }
