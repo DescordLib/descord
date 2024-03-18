@@ -3,18 +3,21 @@ use nanoserde::{DeJson, SerJson};
 
 use crate::{consts, Client};
 
-use super::{author::Author, embed_data::EmbedData, message_reference::MessageReference};
+use super::{author::Author, embed::Embed, message_reference::MessageReference};
 
-#[derive(DeJson, SerJson)]
+#[derive(DeJson, SerJson, Clone)]
 pub struct MessageResponse {
     #[nserde(rename = "d")]
     pub data: MessageData,
 }
 
-#[derive(DeJson, SerJson)]
+#[derive(DeJson, SerJson, Clone)]
 pub struct MessageData {
     pub tts: bool,
-    pub timestamp: String,
+
+    #[nserde(default)]
+    pub timestamp: Option<String>,
+
     pub pinned: bool,
     pub mention_everyone: bool,
 
@@ -22,7 +25,7 @@ pub struct MessageData {
     pub edited_timestamp: Option<String>,
     pub content: String,
     pub channel_id: String,
-    pub embeds: Vec<EmbedData>,
+    pub embeds: Vec<Embed>,
     pub author: Author,
 
     #[nserde(default)]
@@ -36,10 +39,13 @@ pub struct MessageData {
     // mentions, mention_roles, member, etc.
 }
 
-#[derive(Default, Debug, Clone, SerJson)]
+#[derive(Default, Debug, SerJson)]
 pub struct CreateMessageData {
     pub content: String,
     pub tts: bool,
+
+    // TODO: add max check
+    pub embeds: Vec<Embed>,
 }
 
 impl From<String> for CreateMessageData {
@@ -48,12 +54,6 @@ impl From<String> for CreateMessageData {
             content: value,
             ..Default::default()
         }
-    }
-}
-
-impl <'a> From<&'a CreateMessageData> for CreateMessageData {
-    fn from(value: &'a CreateMessageData) -> Self {
-        value.clone()
     }
 }
 

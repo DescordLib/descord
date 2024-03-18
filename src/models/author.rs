@@ -1,6 +1,6 @@
 use nanoserde::{SerJson, DeJson};
 
-#[derive(DeJson, SerJson)]
+#[derive(DeJson, SerJson, Clone)]
 pub struct Author {
     pub username: String,
     #[nserde(rename = "id")]
