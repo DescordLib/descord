@@ -8,3 +8,4 @@ pub mod channel;
 pub mod deleted_message_response;
 pub mod embed;
 pub mod embed_builder;
+pub mod message_edit;

@@ -28,17 +28,24 @@ impl EventHandler for Handler {
         );
     }
 
-    async fn message_create(&self, data: MessageData) {
-        if data.author.bot {
+    async fn message_create(&self, msg: MessageData) {
+        if msg.author.bot {
             return;
         }
 
-        if data.content == "!ping" {
+        if msg.content == "!ping" {
             let clock = Instant::now();
-            let _ = data.get_channel().await.unwrap();
-            let latency = clock.elapsed().as_millis();
+            let new_msg = msg.reply("Pong").await;
 
-            data.reply(format!("Pong! {latency}ms")).await;
+            new_msg
+                .edit(MessageEditData {
+                    content: Some(format!(
+                        "Pong! :ping_pong: `{}ms`",
+                        clock.elapsed().as_millis()
+                    )),
+                    ..Default::default()
+                })
+                .await;
         }
     }
 }
