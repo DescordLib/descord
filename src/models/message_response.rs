@@ -63,6 +63,11 @@ impl MessageData {
         utils::delete_message(&self.channel_id, &self.message_id).await
     }
 
+    pub async fn delete_after(&self, time: u64) {
+        tokio::time::sleep(tokio::time::Duration::from_millis(time)).await;
+        self.delete().await;
+    }
+
     pub async fn edit(&self, data: impl Into<MessageEditData>) {
         utils::edit_message(&self.channel_id, &self.message_id, data).await;
     }

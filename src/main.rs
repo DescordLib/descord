@@ -38,6 +38,12 @@ async fn ping(data: MessageData) {
         .await;
 }
 
+#[command(name = "echo")]
+async fn echo(data: MessageData) {
+    let msg = data.reply("Echo!").await;
+    msg.delete_after(5000).await;
+}
+
 struct Handler;
 
 #[async_trait]
