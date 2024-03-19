@@ -1,7 +1,6 @@
-workspace = { members = ["macros"] }
 [package]
 name = "descord"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 license = "GPL-3.0-only"
 description = "A minimal discord api wrapper."
