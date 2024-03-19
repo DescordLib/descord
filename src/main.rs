@@ -12,8 +12,7 @@ async fn main() {
     )
     .await;
 
-    client.register_commands([ping()]);
-
+    register_all_commands!();
     client.login(Handler).await;
 }
 
@@ -23,7 +22,14 @@ async fn ping(data: MessageData) {
     let msg = data.reply("Pong!").await;
     let latency = clock.elapsed().as_millis();
 
-    msg.edit(format!("Pong! :ping_pong:  `{}ms`", latency)).await;
+    msg.edit(format!("Pong! :ping_pong:  `{}ms`", latency))
+        .await;
+}
+
+#[command(name = "echo")]
+async fn echo(data: MessageData) {
+    let msg = data.reply("Echo!").await;
+    msg.delete_after(5000).await;
 }
 
 struct Handler;

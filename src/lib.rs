@@ -14,9 +14,8 @@ pub use client::Client;
 pub use consts::color;
 pub use consts::intents;
 pub use handlers::EventHandler;
-pub use ws::payload::Payload;
-
 pub use macros::*;
+pub use ws::payload::Payload;
 
 pub mod prelude {
     pub use super::*;

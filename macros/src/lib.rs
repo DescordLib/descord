@@ -158,3 +158,32 @@ enum Type {
     Int,
     Bool,
 }
+
+#[proc_macro]
+pub fn register_all_commands(input: TokenStream) -> TokenStream {
+    let file_path = if !input.is_empty() {
+        parse_macro_input!(input as syn::LitStr).value()
+    } else {
+        String::from("src/main.rs")
+    };
+
+    let mut commands = vec![];
+
+    let items = syn::parse_file(&std::fs::read_to_string(&file_path).unwrap())
+        .unwrap()
+        .items;
+
+    for item in items {
+        if let syn::Item::Fn(function) = item {
+            if function.attrs.iter().any(|attr| attr.path().is_ident("command")) {
+                commands.push(function.sig.ident);
+            }
+        }
+    }
+
+    let expanded = quote! {
+        client.register_commands([#(#commands()),*]);
+    };
+
+    TokenStream::from(expanded)
+}
