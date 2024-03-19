@@ -12,18 +12,24 @@ async fn main() {
     )
     .await;
 
-    client.register_commands([ping()]);
-
+    register_all_commands!(["src/main.rs", "src/lib.rs"]);
     client.login(Handler).await;
 }
 
-#[command(name = "ping")]
+#[descord::command(name = "ping")]
 async fn ping(data: MessageData) {
     let clock = std::time::Instant::now();
     let msg = data.reply("Pong!").await;
     let latency = clock.elapsed().as_millis();
 
-    msg.edit(format!("Pong! :ping_pong:  `{}ms`", latency)).await;
+    msg.edit(format!("Pong! :ping_pong:  `{}ms`", latency))
+        .await;
+}
+
+#[command(name = "echo")]
+async fn echo(data: MessageData) {
+    let msg = data.reply("Echo!").await;
+    msg.delete_after(5000).await;
 }
 
 struct Handler;
