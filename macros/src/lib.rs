@@ -108,8 +108,10 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
             "String" => (type_path!(String, name), type_name!(String)),
             "isize" => (type_path!(Int, name), type_name!(Int)),
             "bool" => (type_path!(Bool, name), type_name!(Bool)),
+            "Channel" => (type_path!(Channel, name), type_name!(Channel)),
+            "User" => (type_path!(User, name), type_name!(User)),
 
-            _ => panic!("Only String, isize and bool type is supported right now."),
+            _ => panic!("Unsupported type"),
         };
 
         param_types.push(ty);
