@@ -42,7 +42,7 @@ pub enum ParamType {
     Bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Value {
     String(String),
     Int(isize),
