@@ -4,6 +4,18 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, ItemFn};
 
+macro_rules! type_path {
+    [ $ty:ident, $name:ident ] => {
+        quote! { descord::internals::Value::$ty(ref #$name) }
+    };
+}
+
+macro_rules! type_name {
+    [ $ty:ident ] => {
+        quote! { descord::internals::ParamType::$ty }
+    };
+}
+
 #[derive(Debug, FromMeta)]
 struct CommandArgs {
     #[darling(default)]
@@ -65,10 +77,10 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
         _ => error(),
     }
 
-    let mut params = vec![];
     let mut param_types = vec![];
+    let mut stmts: Vec<proc_macro2::TokenStream> = vec![];
 
-    for param in function_params.iter().skip(1) {
+    for (idx, param) in function_params.iter().skip(1).enumerate() {
         let param = match param {
             syn::FnArg::Typed(x) => x,
             _ => panic!("`self` is not allowed"),
@@ -80,37 +92,27 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
 
         let type_ = (*param.ty).clone();
 
-        param_types.push(match type_ {
-            syn::Type::Path(ref path) if path.path.is_ident("String") => quote! { ParamType::String },
-            syn::Type::Path(ref path) if path.path.is_ident("isize") => quote! { ParamType::Int },
-            syn::Type::Path(ref path) if path.path.is_ident("bool") => quote! { ParamType::Bool },
-            _ => panic!("Unknown parameter type"),
-        });
-
-        params.push(CommandParam {
-            name: name.ident.clone(),
-            type_,
-        });
-    }
-
-    let mut stmts: Vec<proc_macro2::TokenStream> = vec![];
-    for (idx, param) in params.iter().enumerate() {
-        let CommandParam { name, type_ } = &param;
-
-        let name = match type_ {
-            syn::Type::Path(ref path) if path.path.is_ident("String") => {
-                quote! { Value::String(ref #name) }
-            }
-            syn::Type::Path(ref path) if path.path.is_ident("isize") => {
-                quote! { Value::Int(ref #name) }
-            }
-            syn::Type::Path(ref path) if path.path.is_ident("bool") => {
-                quote! { Value::Bool(ref #name) }
-            }
-
-            _ => panic!(),
+        let syn::Type::Path(path) = type_ else {
+            panic!("Expected a path found something else");
         };
 
+        let (name, ty) = match path
+            .path
+            .segments
+            .last()
+            .unwrap()
+            .ident
+            .to_string()
+            .as_str()
+        {
+            "String" => (type_path!(String, name), type_name!(String)),
+            "isize" => (type_path!(Int, name), type_name!(Int)),
+            "bool" => (type_path!(Bool, name), type_name!(Bool)),
+
+            _ => panic!("Only String, isize and bool type is supported right now."),
+        };
+
+        param_types.push(ty);
         stmts.push(quote! {
             let #name = args[#idx].clone() else { unreachable!() };
         });
@@ -120,12 +122,12 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
     let_stmts.extend(stmts.into_iter());
 
     let expanded = quote! {
-        #function_vis fn #function_name() -> descord::Command {
-            use std::any::Any;
+        #function_vis fn #function_name() -> descord::internals::Command {
+            use descord::prelude::*;
 
             fn f(
-                data: descord::prelude::MessageData,
-                args: Vec<Value>
+                data: MessageData,
+                args: Vec<internals::Value>
             ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'static>> {
                 Box::pin(async move {
                     #let_stmts
@@ -135,7 +137,7 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
                 })
             }
 
-            descord::Command {
+            internals::Command {
                 name: String::from(#new_name),
                 args: vec![#(#param_types),*],
                 handler_fn: f,
@@ -145,19 +147,6 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
     };
 
     TokenStream::from(expanded)
-}
-
-struct CommandParam {
-    name: syn::Ident,
-    type_: syn::Type,
-}
-
-#[allow(dead_code)]
-#[derive(Clone, Copy)]
-enum ParamType {
-    String,
-    Int,
-    Bool,
 }
 
 #[proc_macro]
@@ -188,7 +177,12 @@ pub fn register_all_commands(input: TokenStream) -> TokenStream {
 
         for item in items {
             if let syn::Item::Fn(function) = item {
-                if function.attrs.iter().any(|attr| attr.path().segments.last().map_or(false, |seg| seg.ident == "command")) {
+                if function.attrs.iter().any(|attr| {
+                    attr.path()
+                        .segments
+                        .last()
+                        .map_or(false, |seg| seg.ident == "command")
+                }) {
                     commands.push(function.sig.ident.clone());
                 }
             }

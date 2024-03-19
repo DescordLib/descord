@@ -12,7 +12,7 @@ async fn main() {
     )
     .await;
 
-    client.register_commands([ping(), dm(), say_hello()]);
+    register_all_commands!();
 
     client.login(Handler).await;
 }
@@ -22,7 +22,6 @@ async fn dm(data: MessageData) {
     data.author.send_dm("You've asked for it!").await;
 }
 
-// automatic arg parsing
 #[command]
 async fn say_hello(data: MessageData, name: String) {
     data.reply(format!("Hello, {name}!")).await;

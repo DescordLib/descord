@@ -1,6 +1,8 @@
 use log::*;
 use nanoserde::DeJson;
 
+use crate::internals::*;
+
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -52,7 +54,7 @@ impl WsManager {
         &'a self,
         intents: u32,
         event_handler: Arc<impl EventHandler + std::marker::Sync + 'static>,
-        commands: Arc<HashMap<String, crate::Command>>,
+        commands: Arc<HashMap<String, Command>>,
     ) -> Result<()> {
         if let Some(Ok(Message::Text(body))) = self.socket.1.lock().await.next().await {
             let Some(payload) = Payload::parse(&body) else {
@@ -115,7 +117,7 @@ impl WsManager {
     async fn dispatch_event(
         payload: Payload,
         event_handler: Arc<impl EventHandler>,
-        commands: Arc<HashMap<String, crate::Command>>,
+        commands: Arc<HashMap<String, Command>>,
     ) {
         let event = Event::from_str(payload.type_name.as_ref().unwrap().as_str()).unwrap();
         match event {
