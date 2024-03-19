@@ -12,7 +12,7 @@ async fn main() {
     )
     .await;
 
-    register_all_commands!();
+    register_all_commands!(["src/main.rs", "src/lib.rs"]);
     client.login(Handler).await;
 }
 

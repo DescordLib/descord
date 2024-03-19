@@ -161,22 +161,35 @@ enum Type {
 
 #[proc_macro]
 pub fn register_all_commands(input: TokenStream) -> TokenStream {
-    let file_path = if !input.is_empty() {
-        parse_macro_input!(input as syn::LitStr).value()
+    let paths: Vec<String> = if !input.is_empty() {
+        parse_macro_input!(input as syn::ExprArray)
+            .elems
+            .into_iter()
+            .map(|elem| {
+                if let syn::Expr::Lit(lit) = elem {
+                    if let syn::Lit::Str(lit_str) = lit.lit {
+                        return lit_str.value();
+                    }
+                }
+                panic!("Invalid expression provided");
+            })
+            .collect()
     } else {
-        String::from("src/main.rs")
+        vec![String::from("src/main.rs")]
     };
 
-    let mut commands = vec![];
+    let mut commands = Vec::new();
 
-    let items = syn::parse_file(&std::fs::read_to_string(&file_path).unwrap())
-        .unwrap()
-        .items;
+    for path in &paths {
+        let items = syn::parse_file(&std::fs::read_to_string(&path).unwrap())
+            .unwrap()
+            .items;
 
-    for item in items {
-        if let syn::Item::Fn(function) = item {
-            if function.attrs.iter().any(|attr| attr.path().segments.last().map_or(false, |seg| seg.ident == "command")) {
-                commands.push(function.sig.ident);
+        for item in items {
+            if let syn::Item::Fn(function) = item {
+                if function.attrs.iter().any(|attr| attr.path().segments.last().map_or(false, |seg| seg.ident == "command")) {
+                    commands.push(function.sig.ident.clone());
+                }
             }
         }
     }
