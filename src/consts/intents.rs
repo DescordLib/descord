@@ -1,36 +1,22 @@
-#[repr(u32)]
-#[derive(Debug, Copy, Clone)]
-pub enum GatewayIntent {
-    Guilds = 1 << 0,
-    GuildMembers = 1 << 1,
-    GuildModeration = 1 << 2,
-    GuildEmojisAndStickers = 1 << 3,
-    GuildIntegrations = 1 << 4,
-    GuildWebhooks = 1 << 5,
-    GuildInvites = 1 << 6,
-    GuildVoiceStates = 1 << 7,
-    GuildPresences = 1 << 8,
-    GuildMessages = 1 << 9,
-    GuildMessageReactions = 1 << 10,
-    GuildMessageTyping = 1 << 11,
-    DirectMessages = 1 << 12,
-    DirectmessageReactions = 1 << 13,
-    DirectMessageTyping = 1 << 14,
-    MessageContent = 1 << 15,
-    GuildScheduledEvents = 1 << 16,
-    AutoModerationConfiguration = 1 << 20,
-    AutoModerationExecution = 1 << 21,
-}
-
-impl Into<u32> for GatewayIntent {
-    fn into(self) -> u32 {
-        self as _
-    }
-}
-
-impl std::ops::BitOr for GatewayIntent {
-    type Output = u32;
-    fn bitor(self, rhs: Self) -> Self::Output {
-        self as u32 | rhs as u32
-    }
+#[allow(non_snake_case)]
+pub mod GatewayIntent {
+    pub const GUILDS: u32 = 1 << 0;
+    pub const GUILD_MEMBERS: u32 = 1 << 1;
+    pub const GUILD_MODERATION: u32 = 1 << 2;
+    pub const GUILD_EMOJIS_AND_STICKERS: u32 = 1 << 3;
+    pub const GUILD_INTEGRATIONS: u32 = 1 << 4;
+    pub const GUILD_WEBHOOKS: u32 = 1 << 5;
+    pub const GUILD_INVITES: u32 = 1 << 6;
+    pub const GUILD_VOICE_STATES: u32 = 1 << 7;
+    pub const GUILD_PRESENCES: u32 = 1 << 8;
+    pub const GUILD_MESSAGES: u32 = 1 << 9;
+    pub const GUILD_MESSAGE_REACTIONS: u32 = 1 << 10;
+    pub const GUILD_MESSAGE_TYPING: u32 = 1 << 11;
+    pub const DIRECT_MESSAGES: u32 = 1 << 12;
+    pub const DIRECTMESSAGE_REACTIONS: u32 = 1 << 13;
+    pub const DIRECT_MESSAGE_TYPING: u32 = 1 << 14;
+    pub const MESSAGE_CONTENT: u32 = 1 << 15;
+    pub const GUILD_SCHEDULED_EVENTS: u32 = 1 << 16;
+    pub const AUTO_MODERATION_CONFIGURATION: u32 = 1 << 20;
+    pub const AUTO_MODERATION_EXECUTION: u32 = 1 << 21;
 }

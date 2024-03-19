@@ -46,6 +46,7 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
     let function_name = &function.sig.ident;
     let function_body = &function.block;
     let function_params = &function.sig.inputs;
+    let function_vis = function.vis;
 
     let error = || panic!("Expected `descord::prelude::MessageData` as the first argument");
     match function_params.first() {
@@ -80,9 +81,9 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
         let type_ = (*param.ty).clone();
 
         param_types.push(match type_ {
-            syn::Type::Path(ref path) if path.path.is_ident("String") => quote! { Type::String },
-            syn::Type::Path(ref path) if path.path.is_ident("isize") => quote! { Type::Int },
-            syn::Type::Path(ref path) if path.path.is_ident("bool") => quote! { Type::Bool },
+            syn::Type::Path(ref path) if path.path.is_ident("String") => quote! { ParamType::String },
+            syn::Type::Path(ref path) if path.path.is_ident("isize") => quote! { ParamType::Int },
+            syn::Type::Path(ref path) if path.path.is_ident("bool") => quote! { ParamType::Bool },
             _ => panic!("Unknown parameter type"),
         });
 
@@ -111,7 +112,7 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
         };
 
         stmts.push(quote! {
-            let #name = args[#idx];
+            let #name = args[#idx].clone() else { unreachable!() };
         });
     }
 
@@ -119,7 +120,7 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
     let_stmts.extend(stmts.into_iter());
 
     let expanded = quote! {
-        fn #function_name() -> descord::Command {
+        #function_vis fn #function_name() -> descord::Command {
             use std::any::Any;
 
             fn f(
@@ -153,7 +154,7 @@ struct CommandParam {
 
 #[allow(dead_code)]
 #[derive(Clone, Copy)]
-enum Type {
+enum ParamType {
     String,
     Int,
     Bool,
