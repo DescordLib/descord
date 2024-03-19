@@ -10,6 +10,7 @@ async fn main() {
     let mut client = Client::new(
         "TOKEN",
         GatewayIntent::MessageContent | GatewayIntent::GuildMessages,
+        "!" // default prefix
     )
     .await;
 
@@ -17,13 +18,13 @@ async fn main() {
     client.login(Handler).await;
 }
 
-#[descord::command("!ping")]
+#[descord::command("ping")]
 async fn ping(data: MessageData) {
     let clock = std::time::Instant::now();
     let msg = data.reply("Pong!").await;
     let latency = clock.elapsed().as_millis();
 
-    msg.edit(format!("Pong! {}ms", latency)).await;
+    msg.edit(format!("Pong! `{}ms`", latency)).await;
 }
 
 struct Handler;
