@@ -247,21 +247,31 @@ checksum = "7e962a19be5cfc3f3bf6dd8f61eb50107f356ad6270fbb3ed41476571db78be5"
 
 [[package]]
 name = "descord"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "async-trait",
+ "descord-macros",
  "dotenvy",
  "env_logger",
  "futures-util",
  "json",
  "lazy_static",
  "log",
- "macros",
  "nanoserde",
  "reqwest",
  "tokio",
  "tokio-tungstenite",
  "url",
+]
+
+[[package]]
+name = "descord-macros"
+version = "0.1.0"
+dependencies = [
+ "darling",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -649,16 +659,6 @@ name = "log"
 version = "0.4.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "90ed8c1e510134f979dbc4f070f87d4313098b704861a105fe34231c70a3901c"
-
-[[package]]
-name = "macros"
-version = "0.1.0"
-dependencies = [
- "darling",
- "proc-macro2",
- "quote",
- "syn",
-]
 
 [[package]]
 name = "memchr"

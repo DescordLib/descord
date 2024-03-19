@@ -1,7 +1,11 @@
 [package]
-name = "macros"
+name = "descord-macros"
 version = "0.1.0"
 edition = "2021"
+description = "Macro implementation crate of descord."
+authors = ["thatmagicalcat <thatmagicalcat@duck.com>"]
+repository = "https://github.com/thatmagicalcat/descord"
+license = "GPL-3.0-only"
 
 [dependencies]
 proc-macro2 = "1.0.79"
