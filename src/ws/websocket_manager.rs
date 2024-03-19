@@ -1,6 +1,7 @@
 use log::*;
 use nanoserde::DeJson;
 
+use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
@@ -51,6 +52,7 @@ impl WsManager {
         &'a self,
         intents: u32,
         event_handler: Arc<impl EventHandler + std::marker::Sync + 'static>,
+        commands: Arc<HashMap<String, crate::Command>>,
     ) -> Result<()> {
         if let Some(Ok(Message::Text(body))) = self.socket.1.lock().await.next().await {
             let Some(payload) = Payload::parse(&body) else {
@@ -95,8 +97,9 @@ impl WsManager {
                         json::parse(&payload.raw_json).unwrap().pretty(4)
                     );
 
+                    let commands = Arc::clone(&commands);
                     tokio::spawn(async move {
-                        Self::dispatch_event(payload, event_handler).await;
+                        Self::dispatch_event(payload, event_handler, commands).await;
                     });
                 }
 
@@ -109,7 +112,11 @@ impl WsManager {
         Ok(())
     }
 
-    async fn dispatch_event(payload: Payload, event_handler: Arc<impl EventHandler>) {
+    async fn dispatch_event(
+        payload: Payload,
+        event_handler: Arc<impl EventHandler>,
+        commands: Arc<HashMap<String, crate::Command>>,
+    ) {
         let event = Event::from_str(payload.type_name.as_ref().unwrap().as_str()).unwrap();
         match event {
             Event::Ready => {
@@ -132,6 +139,15 @@ impl WsManager {
                 let message_data =
                     message_response::MessageResponse::deserialize_json(&payload.raw_json)
                         .expect("Failed to parse json");
+
+                if let Some(command_name) = message_data.data.content.split(' ').next() {
+                    if let Some(handler_fn) = commands.get(command_name) {
+                        let handler = handler_fn.clone();
+                        handler.call(message_data.data).await;
+
+                        return;
+                    }
+                }
 
                 event_handler.message_create(message_data.data).await;
             }

@@ -24,6 +24,7 @@ pub struct MessageData {
 
     #[nserde(default)]
     pub pinned: bool,
+    #[nserde(default)]
     pub mention_everyone: bool,
 
     pub flags: usize,
