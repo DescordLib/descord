@@ -8,6 +8,7 @@ async fn main() {
     let mut client = Client::new(
         &std::env::var("DISCORD_TOKEN").unwrap(),
         GatewayIntent::MessageContent | GatewayIntent::GuildMessages,
+        "!",
     )
     .await;
 
@@ -16,7 +17,7 @@ async fn main() {
     client.login(Handler).await;
 }
 
-#[descord::command("!ping")]
+#[command(name = "pinger", prefix = "hah!")]
 async fn ping(data: MessageData) {
     let clock = std::time::Instant::now();
     let msg = data.reply("Pong!").await;
