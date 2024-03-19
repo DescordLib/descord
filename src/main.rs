@@ -7,13 +7,14 @@ async fn main() {
 
     let mut client = Client::new(
         &std::env::var("DISCORD_TOKEN").unwrap(),
-        GatewayIntent::MESSAGE_CONTENT | GatewayIntent::GUILD_MESSAGES | GatewayIntent::DIRECT_MESSAGES,
+        GatewayIntent::MESSAGE_CONTENT
+            | GatewayIntent::GUILD_MESSAGES
+            | GatewayIntent::DIRECT_MESSAGES,
         "!",
     )
     .await;
 
     register_all_commands!();
-
     client.login(Handler).await;
 }
 
@@ -23,7 +24,7 @@ async fn dm(data: MessageData) {
 }
 
 #[command]
-async fn say_hello(data: MessageData, name: String) {
+async fn say_hello(data: MessageData, name: std::String) {
     data.reply(format!("Hello, {name}!")).await;
 }
 
@@ -41,6 +42,22 @@ async fn ping(data: MessageData) {
 async fn echo(data: MessageData) {
     let msg = data.reply("Echo!").await;
     msg.delete_after(5000).await;
+}
+
+#[command(name = "channel")]
+async fn channel(data: MessageData, channel: Channel) {
+    data.reply(format!("Channel: {}", channel.name)).await;
+}
+
+#[command(name = "user")]
+async fn user(data: MessageData, user: User) {
+    data.reply(format!(
+        "name: {0}, id: {1} {2}",
+        user.username,
+        user.id,
+        user.mention()
+    ))
+    .await;
 }
 
 struct Handler;

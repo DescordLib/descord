@@ -1,4 +1,6 @@
+use crate::models::channel::Channel;
 use crate::prelude::*;
+use crate::utils::*;
 use futures_util::FutureExt;
 
 /// Paramter type info (meant to be used in attribute macro).
@@ -7,6 +9,8 @@ pub enum ParamType {
     String,
     Int,
     Bool,
+    Channel,
+    User,
 }
 
 #[derive(Debug, Clone)]
@@ -14,6 +18,8 @@ pub enum Value {
     String(String),
     Int(isize),
     Bool(bool),
+    Channel(Channel),
+    User(User),
 }
 
 pub(crate) type HandlerFn =
@@ -47,7 +53,25 @@ impl Command {
                 ParamType::String => args.push(Value::String((split[idx + 1].to_owned()))),
                 ParamType::Int => args.push(Value::Int(split[idx + 1].parse::<isize>().unwrap())),
                 ParamType::Bool => args.push(Value::Bool(split[idx + 1].parse::<bool>().unwrap())),
-
+                ParamType::Channel => {
+                    let channel_id_str = split[idx + 1];
+                    let channel_id =
+                        if channel_id_str.starts_with("<#") && channel_id_str.ends_with(">") {
+                            &channel_id_str[2..channel_id_str.len() - 1]
+                        } else {
+                            channel_id_str
+                        };
+                    args.push(Value::Channel(get_channel(channel_id).await.unwrap()));
+                }
+                ParamType::User => {
+                    let user_id_str = split[idx + 1];
+                    let user_id = if user_id_str.starts_with("<@") && user_id_str.ends_with(">") {
+                        &user_id_str[2..user_id_str.len() - 1]
+                    } else {
+                        user_id_str
+                    };
+                    args.push(Value::User(get_user(user_id).await.unwrap()));
+                }
                 _ => {}
             }
         }

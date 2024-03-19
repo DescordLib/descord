@@ -3,7 +3,7 @@ use nanoserde::{DeJson, SerJson};
 
 use super::message_response::CreateMessageData;
 
-#[derive(DeJson, SerJson)]
+#[derive(DeJson, SerJson, Debug, Clone)]
 pub struct Channel {
     pub last_message_id: String,
     pub flags: usize,
