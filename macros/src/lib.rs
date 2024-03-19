@@ -175,7 +175,7 @@ pub fn register_all_commands(input: TokenStream) -> TokenStream {
 
     for item in items {
         if let syn::Item::Fn(function) = item {
-            if function.attrs.iter().any(|attr| attr.path().is_ident("command")) {
+            if function.attrs.iter().any(|attr| attr.path().segments.last().map_or(false, |seg| seg.ident == "command")) {
                 commands.push(function.sig.ident);
             }
         }

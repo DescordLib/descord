@@ -16,7 +16,7 @@ async fn main() {
     client.login(Handler).await;
 }
 
-#[command(name = "ping")]
+#[descord::command(name = "ping")]
 async fn ping(data: MessageData) {
     let clock = std::time::Instant::now();
     let msg = data.reply("Pong!").await;
