@@ -10,6 +10,7 @@ readme = "README.md"
 
 [dependencies]
 async-trait = "0.1.78"
+descord-macros = { version = "0.1.0", path = "macros" }
 dotenvy = "0.15.7"
 env_logger = "0.11.3"
 futures-util = "0.3.30"
@@ -21,4 +22,3 @@ reqwest = "0.11.26"
 tokio = { version = "1.36.0", features = ["full"] }
 tokio-tungstenite = { version = "0.21.0", features = ["native-tls"] }
 url = "2.5.0"
-macros = { version = "0.1.0", path = "./macros" }
