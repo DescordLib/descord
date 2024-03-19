@@ -39,7 +39,6 @@ impl Client {
     }
 
     pub async fn login(self, event_handler: impl EventHandler + std::marker::Sync + 'static) {
-        println!("commands: {:?}", self.commands);
         self.ws
             .connect(self.intents, event_handler.into(), self.commands.into())
             .await;
@@ -50,7 +49,16 @@ impl Client {
     }
 
     pub fn register_commands<const N: usize>(&mut self, commands: [crate::Command; N]) {
-        commands.into_iter().for_each(|command| {
+        commands.into_iter().for_each(|mut command| {
+            // if a custom prefix is not applied, add the default prefix
+            if !command.custom_prefix {
+                command.name = format!(
+                    "{default_prefix}{name}",
+                    default_prefix = self.prefix,
+                    name = command.name
+                );
+            }
+
             self.commands.insert(command.name.clone(), command);
         });
     }

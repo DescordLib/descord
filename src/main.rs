@@ -17,13 +17,13 @@ async fn main() {
     client.login(Handler).await;
 }
 
-#[command(name = "pinger", prefix = "hah!")]
+#[command(name = "ping")]
 async fn ping(data: MessageData) {
     let clock = std::time::Instant::now();
     let msg = data.reply("Pong!").await;
     let latency = clock.elapsed().as_millis();
 
-    msg.edit(format!("Pong! {}ms", latency)).await;
+    msg.edit(format!("Pong! :ping_pong:  `{}ms`", latency)).await;
 }
 
 struct Handler;

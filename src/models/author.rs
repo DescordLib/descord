@@ -1,5 +1,9 @@
 use nanoserde::{DeJson, SerJson};
 
+use crate::utils;
+
+use super::message_response::CreateMessageData;
+
 #[derive(DeJson, SerJson, Clone)]
 pub struct Author {
     pub username: String,
@@ -25,5 +29,9 @@ impl Author {
         Some(format!(
             "https://cdn.discordapp.com/avatars/{user_id}/{avatar_hash}.webp"
         ))
+    }
+
+    pub async fn send_dm(&self, data: impl Into<CreateMessageData>) {
+        utils::send_dm(&self.user_id, data).await;
     }
 }

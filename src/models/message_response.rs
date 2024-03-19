@@ -27,6 +27,7 @@ pub struct MessageData {
     #[nserde(default)]
     pub mention_everyone: bool,
 
+    #[nserde(default)]
     pub flags: usize,
     pub edited_timestamp: Option<String>,
     pub content: String,
@@ -47,7 +48,7 @@ pub struct MessageData {
 
 impl MessageData {
     pub async fn reply(&self, data: impl Into<CreateMessageData>) -> MessageData {
-        utils::reply(&self, data).await
+        utils::reply(&self.message_id, &self.channel_id, data).await
     }
 
     pub async fn send_in_channel(&self, data: impl Into<CreateMessageData>) {

@@ -58,6 +58,7 @@ pub(crate) type HandlerFn =
 #[derive(Debug, Clone)]
 pub struct Command {
     pub name: String,
+    pub custom_prefix: bool,
     pub args: Vec<ParamType>,
     pub handler_fn: HandlerFn,
 }

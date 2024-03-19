@@ -1,5 +1,6 @@
 use crate::consts::API;
 use crate::models::channel::Channel;
+use crate::models::dm_channel::DirectMessageChannel;
 use crate::models::message_response::CreateMessageData;
 use crate::prelude::MessageData;
 use crate::{client::TOKEN, models::message_edit::MessageEditData};
@@ -27,22 +28,22 @@ pub async fn send(channel_id: &str, data: impl Into<CreateMessageData>) {
         .expect("Failed to send http request");
 }
 
-pub async fn reply(reply_to: &MessageData, data: impl Into<CreateMessageData>) -> MessageData {
+pub async fn reply(
+    message_id: &str,
+    channel_id: &str,
+    data: impl Into<CreateMessageData>,
+) -> MessageData {
     let data: CreateMessageData = data.into();
 
     let mut body = json::parse(&data.serialize_json()).unwrap();
     body.insert(
         "message_reference",
         object! {
-            message_id: reply_to.message_id.as_str(),
-            guild_id: reply_to.guild_id.as_ref().unwrap().as_str(),
+            message_id: message_id,
         },
     );
 
-    let url = format!(
-        "{API}/channels/{channel_id}/messages",
-        channel_id = reply_to.channel_id
-    );
+    let url = format!("{API}/channels/{channel_id}/messages",);
 
     let resp = reqwest::Client::new()
         .post(url)
@@ -96,6 +97,30 @@ pub async fn edit_message(channel_id: &str, message_id: &str, data: impl Into<Me
         .send()
         .await
         .unwrap();
+}
+
+/// Returns a new DM channel with a user (or return
+/// an existing one). Returns a `DirectMessageChannel` object.
+pub async fn get_dm(user_id: &str) -> DirectMessageChannel {
+    let url = format!("{API}/users/@me/channels");
+    let data = json::stringify(object! {
+        recipient_id: user_id
+    });
+
+    let response = Client::new()
+        .post(url)
+        .body(data)
+        .headers(get_headers())
+        .send()
+        .await
+        .unwrap();
+
+    DirectMessageChannel::deserialize_json(&response.text().await.unwrap()).unwrap()
+}
+
+pub async fn send_dm(user_id: &str, data: impl Into<CreateMessageData>) {
+    let dm_channel = get_dm(user_id).await;
+    send(&dm_channel.id, data).await;
 }
 
 fn get_headers() -> HeaderMap {

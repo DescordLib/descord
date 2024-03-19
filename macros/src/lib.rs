@@ -8,17 +8,18 @@ use syn::{parse_macro_input, ItemFn};
 struct CommandArgs {
     #[darling(default)]
     name: Option<String>,
-    #[darling(default = "default_prefix")]
-    prefix: String,
-}
-
-fn default_prefix() -> String {
-    String::from("!")
+    #[darling(default)]
+    prefix: Option<String>,
 }
 
 #[proc_macro_attribute]
 pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
     let function = parse_macro_input!(input as ItemFn);
+
+    if function.sig.asyncness.is_none() {
+        panic!("Function marked with `#[descord::command(...)]` should be async");
+    }
+
     let attr_args = match NestedMeta::parse_meta_list(args.into()) {
         Ok(v) => v,
         Err(e) => {
@@ -26,24 +27,21 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
         }
     };
 
-    let command_args = match CommandArgs::from_list(&attr_args) {
+    let command_args: CommandArgs = match CommandArgs::from_list(&attr_args) {
         Ok(v) => v,
         Err(e) => {
             return TokenStream::from(Error::from(e).write_errors());
         }
     };
 
+    let custom_prefix = command_args.prefix.is_some();
     let new_name = format!(
         "{}{}",
-        command_args.prefix,
+        command_args.prefix.as_ref().unwrap_or(&String::new()),
         command_args
             .name
             .unwrap_or_else(|| function.sig.ident.to_string())
     );
-
-    if function.sig.asyncness.is_none() {
-        panic!("Function marked with `#[descord::command(...)]` should be async");
-    }
 
     let function_name = &function.sig.ident;
     let function_body = &function.block;
@@ -140,6 +138,7 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
                 name: String::from(#new_name),
                 args: vec![#(#param_types),*],
                 handler_fn: f,
+                custom_prefix: #custom_prefix,
             }
         }
     };
