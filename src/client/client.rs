@@ -20,10 +20,11 @@ pub struct Client {
     ws: WsManager,
     token: String,
     commands: HashMap<String, crate::Command>,
+    prefix: String,
 }
 
 impl Client {
-    pub async fn new(token: &str, intents: impl Into<u32>) -> Self {
+    pub async fn new(token: &str, intents: impl Into<u32>, prefix: &str) -> Self {
         *TOKEN.lock().unwrap() = Some(token.to_owned());
 
         Self {
@@ -33,6 +34,7 @@ impl Client {
                 .await
                 .expect("Failed to initialize websockets"),
             commands: HashMap::new(),
+            prefix: prefix.to_owned(),
         }
     }
 
