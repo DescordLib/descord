@@ -1,4 +1,4 @@
-use nanoserde::{SerJson, DeJson};
+use nanoserde::{DeJson, SerJson};
 
 use super::{author::Author, embed::Embed};
 
@@ -14,7 +14,5 @@ pub struct MessageReference {
     pub content: String,
     pub channel_id: String,
     pub author: Author,
-
     // TODO: mentions, mention_roles, attachments
 }
-

@@ -1,9 +1,9 @@
-use nanoserde::{SerJson, DeJson};
+use nanoserde::{DeJson, SerJson};
 
 #[derive(DeJson, SerJson)]
 pub struct DeletedMessageResponse {
     #[nserde(rename = "d")]
-    pub data: DeletedMessageData
+    pub data: DeletedMessageData,
 }
 
 #[derive(DeJson, SerJson)]

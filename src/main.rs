@@ -1,5 +1,4 @@
 use descord::prelude::*;
-use std::time::Instant;
 
 #[tokio::main]
 async fn main() {
@@ -26,24 +25,18 @@ impl EventHandler for Handler {
         );
     }
 
-    async fn message_create(&self, msg: MessageData) {
-        if msg.author.bot {
+    async fn message_create(&self, data: MessageData) {
+        if data.author.bot {
             return;
         }
-
-        if msg.content == "!ping" {
-            let clock = Instant::now();
-            let new_msg = msg.reply("Pong").await;
-
-            new_msg
-                .edit(MessageEditData {
-                    content: Some(format!(
-                        "Pong! :ping_pong: `{}ms`",
-                        clock.elapsed().as_millis()
-                    )),
-                    ..Default::default()
-                })
-                .await;
-        }
     }
+}
+
+#[command("ping")]
+async fn ping(data: descord::prelude::MessageData) {
+    let clock = std::time::Instant::now();
+    let _ = data.get_channel().await.unwrap();
+    let latency = clock.elapsed().as_millis();
+
+    data.reply(format!("Pong! {}ms", latency)).await;
 }
