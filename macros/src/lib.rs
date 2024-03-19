@@ -1,13 +1,45 @@
+use darling::ast::NestedMeta;
+use darling::{Error, FromMeta};
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, ItemFn, LitStr};
+use syn::{parse_macro_input, ItemFn};
 
-// TODO: keep track of token spans and better error handling.
+#[derive(Debug, FromMeta)]
+struct CommandArgs {
+    #[darling(default)]
+    name: Option<String>,
+    #[darling(default = "default_prefix")]
+    prefix: String,
+}
+
+fn default_prefix() -> String {
+    String::from("!")
+}
 
 #[proc_macro_attribute]
 pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
     let function = parse_macro_input!(input as ItemFn);
-    let new_name = parse_macro_input!(args as LitStr).value();
+    let attr_args = match NestedMeta::parse_meta_list(args.into()) {
+        Ok(v) => v,
+        Err(e) => {
+            return TokenStream::from(Error::from(e).write_errors());
+        }
+    };
+
+    let command_args = match CommandArgs::from_list(&attr_args) {
+        Ok(v) => v,
+        Err(e) => {
+            return TokenStream::from(Error::from(e).write_errors());
+        }
+    };
+
+    let new_name = format!(
+        "{}{}",
+        command_args.prefix,
+        command_args
+            .name
+            .unwrap_or_else(|| function.sig.ident.to_string())
+    );
 
     if function.sig.asyncness.is_none() {
         panic!("Function marked with `#[descord::command(...)]` should be async");
@@ -67,11 +99,17 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
         let CommandParam { name, type_ } = &param;
 
         let name = match type_ {
-            syn::Type::Path(ref path) if path.path.is_ident("String") => quote! { Value::String(ref #name) },
-            syn::Type::Path(ref path) if path.path.is_ident("isize") => quote! { Value::Int(ref #name) },
-            syn::Type::Path(ref path) if path.path.is_ident("bool") => quote! { Value::Bool(ref #name) },
+            syn::Type::Path(ref path) if path.path.is_ident("String") => {
+                quote! { Value::String(ref #name) }
+            }
+            syn::Type::Path(ref path) if path.path.is_ident("isize") => {
+                quote! { Value::Int(ref #name) }
+            }
+            syn::Type::Path(ref path) if path.path.is_ident("bool") => {
+                quote! { Value::Bool(ref #name) }
+            }
 
-            _ => panic!()
+            _ => panic!(),
         };
 
         stmts.push(quote! {

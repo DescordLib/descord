@@ -49,10 +49,11 @@ pub enum Value {
     Bool(bool),
 }
 
-pub(crate) type HandlerFn = fn(
-    prelude::MessageData,
-    Vec<Value>,
-) -> std::pin::Pin<Box<dyn futures_util::Future<Output = ()> + Send + 'static>>;
+pub(crate) type HandlerFn =
+    fn(
+        prelude::MessageData,
+        Vec<Value>,
+    ) -> std::pin::Pin<Box<dyn futures_util::Future<Output = ()> + Send + 'static>>;
 
 #[derive(Debug, Clone)]
 pub struct Command {
