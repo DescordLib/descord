@@ -77,6 +77,20 @@ event_handler_args![
     reaction_add
 ];
 
+macro_rules! event_case {
+    ($handler_args:ident, $function:ident, $param_name:ident, $event_name:ident, $handler_value:ident, $event_type:ident) => {
+        if $handler_args.$event_name || $function.sig.ident.to_string().to_uppercase() == stringify!($event_name).to_uppercase() {
+            check_arg!($function, stringify!($handler_value));
+            Some((
+                quote! { descord::internals::HandlerValue::$handler_value(#$param_name) },
+                quote! { descord::Event::$event_type },
+            ))
+        } else {
+            None
+        }
+    };
+}
+
 #[proc_macro_attribute]
 pub fn event_handler(args: TokenStream, input: TokenStream) -> TokenStream {
     let function = parse_macro_input!(input as ItemFn);
@@ -114,57 +128,13 @@ pub fn event_handler(args: TokenStream, input: TokenStream) -> TokenStream {
         }
     };
 
-    if !handler_args.only_one() {
-        panic!(
-            "Expected only one of {:?} handler type",
-            handler_args.all_events()
-        );
-    }
-
-    let (name, event_ty) = match () {
-        _ if handler_args.ready => {
-            check_arg!(function, "ReadyData");
-            (
-                quote! { descord::internals::HandlerValue::ReadyData(#param_name) },
-                quote! { descord::Event::Ready },
-            )
-        }
-
-        _ if handler_args.message_create => {
-            check_arg!(function, "Message");
-            (
-                quote! { descord::internals::HandlerValue::MessageData(#param_name) },
-                quote! { descord::Event::MessageCreate },
-            )
-        }
-
-        _ if handler_args.message_update => {
-            check_arg!(function, "Message");
-            (
-                quote! { descord::internals::HandlerValue::MessageData(#param_name) },
-                quote! { descord::Event::MessageUpdate },
-            )
-        }
-
-        _ if handler_args.message_delete => {
-            check_arg!(function, "DeletedMessageData");
-            (
-                quote! { descord::internals::HandlerValue::DeletedMessageData(#param_name) },
-                quote! { descord::Event::MessageDelete },
-            )
-        }
-
-        _ if handler_args.reaction_add => {
-            check_arg!(function, "ReactionData");
-
-            (
-                quote! { descord::internals::HandlerValue::ReactionData(#param_name) },
-                quote! { descord::Event::MessageReactionAdd },
-            )
-        }
-
-        _ => panic!("Enable one of {:?} event", handler_args.all_events()),
-    };
+    let (name, event_ty) =
+        event_case!(handler_args, function, param_name, ready, ReadyData, Ready)
+            .or_else(|| event_case!(handler_args, function, param_name, message_create, MessageData, MessageCreate))
+            .or_else(|| event_case!(handler_args, function, param_name, message_update, MessageData, MessageUpdate))
+            .or_else(|| event_case!(handler_args, function, param_name, message_delete, DeletedMessageData, MessageDelete))
+            .or_else(|| event_case!(handler_args, function, param_name, reaction_add, ReactionData, MessageReactionAdd))
+            .unwrap_or_else(|| panic!("Enable one of {:?} event", handler_args.all_events()));
 
     let let_stmt = quote! {
         let #name = data else {

@@ -35,14 +35,14 @@ async fn dm(msg: Message) {
 }
 
 #[command]
-async fn say_hello(data: Message, name: std::String) {
-    data.reply(format!("Hello, {name}!")).await;
+async fn say_hello(msg: Message, name: std::String) {
+    msg.reply(format!("Hello, {name}!")).await;
 }
 
 #[command(name = "ping")]
-async fn ping(data: Message) {
+async fn ping(msg: Message) {
     let clock = std::time::Instant::now();
-    let msg = data.reply("Pong!").await;
+    let msg = msg.reply("Pong!").await;
     let latency = clock.elapsed().as_millis();
 
     msg.edit(format!("Pong! :ping_pong:  `{}ms`", latency))
@@ -50,19 +50,19 @@ async fn ping(data: Message) {
 }
 
 #[command(name = "echo")]
-async fn echo(data: Message) {
-    let msg = data.reply("Echo!").await;
+async fn echo(msg: Message) {
+    let msg = msg.reply("Echo!").await;
     msg.delete_after(5000).await;
 }
 
 #[command(name = "channel")]
-async fn channel(data: Message, channel: Channel) {
-    data.reply(format!("Channel: {}", channel.name)).await;
+async fn channel(msg: Message, channel: Channel) {
+    msg.reply(format!("Channel: {}", channel.name)).await;
 }
 
 #[command(name = "user")]
-async fn user(data: Message, user: User) {
-    data.reply(format!(
+async fn user(msg: Message, user: User) {
+    msg.reply(format!(
         "name: {0}, id: {1} {2}",
         user.username,
         user.id,
@@ -72,20 +72,20 @@ async fn user(data: Message, user: User) {
 }
 
 #[command]
-async fn counter(data: Message) {
-    let msg = data.send_in_channel("Count: 0").await;
+async fn counter(msg: Message) {
+    let msg = msg.send_in_channel("Count: 0").await;
 
     msg.react("⬆").await;
     msg.react("⬇").await;
 }
 
 #[command]
-async fn react(data: Message, emoji: String) {
+async fn react(msg: Message, emoji: String) {
     println!("reacting");
-    data.react(&emoji).await;
+    msg.react(&emoji).await;
 }
 
-#[event_handler(ready)]
+#[event_handler]
 async fn ready(data: ReadyData) {
     println!(
         "Logged in as: {}#{}",
@@ -95,7 +95,7 @@ async fn ready(data: ReadyData) {
     *BOT_ID.lock().await = data.user.id.into();
 }
 
-#[event_handler(reaction_add)]
+#[event_handler]
 async fn reaction_add(data: ReactionData) {
     if &data.user_id == BOT_ID.lock().await.as_str() {
         return;
