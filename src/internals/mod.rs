@@ -1,4 +1,9 @@
+use std::collections::HashMap;
+
+use crate::handlers::events::Event;
 use crate::models::channel::Channel;
+use crate::models::deleted_message_response::DeletedMessageData;
+use crate::models::reaction_response::ReactionData;
 use crate::prelude::*;
 use crate::utils::*;
 use futures_util::FutureExt;
@@ -22,11 +27,37 @@ pub enum Value {
     User(User),
 }
 
-pub(crate) type HandlerFn =
+#[derive(Debug, Clone)]
+pub enum HandlerValue {
+    ReadyData(ReadyData),
+    MessageData(MessageData),
+    DeletedMessageData(DeletedMessageData),
+    ReactionData(ReactionData),
+}
+
+pub type HandlerFn =
     fn(
         MessageData,
         Vec<Value>,
     ) -> std::pin::Pin<Box<dyn futures_util::Future<Output = ()> + Send + 'static>>;
+
+pub type EventHandlerFn =
+    fn(HandlerValue) -> std::pin::Pin<Box<dyn futures_util::Future<Output = ()> + Send + 'static>>;
+
+#[derive(Debug, Clone)]
+pub struct EventHandler {
+    pub event: Event,
+    pub handler_fn: EventHandlerFn,
+}
+
+impl EventHandler {
+    pub async fn call(&self, data: HandlerValue) {
+        let fut = ((self.handler_fn)(data));
+        let boxed_fut: std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'static>> =
+            Box::pin(fut);
+        boxed_fut.await;
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Command {

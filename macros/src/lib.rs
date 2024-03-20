@@ -2,7 +2,37 @@ use darling::ast::NestedMeta;
 use darling::{Error, FromMeta};
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, ItemFn};
+use syn::parse::{Parse, ParseStream};
+use syn::{parse_macro_input, ExprArray, Ident, ItemFn, Token};
+
+macro_rules! event_handler_args {
+    [ $($event_name:ident),* ] => {
+        #[allow(dead_code)]
+        #[derive(Debug, FromMeta)]
+        struct EventHandlerArgs {
+            $(
+                #[darling(default)] $event_name: bool,
+            )*
+        }
+
+        #[allow(dead_code)]
+        impl EventHandlerArgs {
+            /// Returns if only one of the events is turned on.
+            pub fn only_one(&self) -> bool {
+                [$(self.$event_name,)*]
+                    .into_iter()
+                    .filter(|b| *b)
+                    .count()
+                == 1
+            }
+
+            /// Returns the name of all the events.
+            pub fn all_events(&self) -> &'static [&'static str] {
+                &[$(stringify!($event_name),)*]
+            }
+        }
+    };
+}
 
 macro_rules! type_path {
     [ $ty:ident, $name:ident ] => {
@@ -16,12 +46,142 @@ macro_rules! type_name {
     };
 }
 
+macro_rules! check_arg {
+    [ $func:ident, $arg:expr ] => {
+        if !(
+            $func.sig.inputs.len() == 1
+            && match $func.sig.inputs.first().unwrap() {
+                syn::FnArg::Typed(x)
+                    if match *x.ty {
+                        syn::Type::Path(ref path) if path.path.is_ident($arg) => true,
+                        _ => false,
+                    } => true,
+                _ => false,
+            }
+        ) { panic!("Expected a function with one parameter `{}`", $arg); }
+    };
+}
+
 #[derive(Debug, FromMeta)]
 struct CommandArgs {
     #[darling(default)]
     name: Option<String>,
     #[darling(default)]
     prefix: Option<String>,
+}
+
+event_handler_args![
+    ready,
+    message_create,
+    message_delete,
+    message_update,
+    reaction_add
+];
+
+#[proc_macro_attribute]
+pub fn event_handler(args: TokenStream, input: TokenStream) -> TokenStream {
+    let function = parse_macro_input!(input as ItemFn);
+    let function_vis = function.vis;
+    let function_name = &function.sig.ident;
+    let function_body = &function.block;
+
+    if function.sig.asyncness.is_none() {
+        panic!("Function marked with `#[descord::event_handler(...)]` should be async");
+    }
+
+    let attr_args = match NestedMeta::parse_meta_list(args.into()) {
+        Ok(v) => v,
+        Err(e) => {
+            return TokenStream::from(Error::from(e).write_errors());
+        }
+    };
+
+    let handler_args: EventHandlerArgs = match EventHandlerArgs::from_list(&attr_args) {
+        Ok(v) => v,
+        Err(e) => {
+            return TokenStream::from(Error::from(e).write_errors());
+        }
+    };
+
+    if !handler_args.only_one() {
+        panic!(
+            "Expected only one of {:?} handler type",
+            handler_args.all_events()
+        );
+    }
+
+    let (name, event_ty) = match () {
+        _ if handler_args.ready => {
+            check_arg!(function, "ReadyData");
+            (
+                quote! { descord::internals::HandlerValue::ReadyData(data) },
+                quote! { descord::Event::Ready },
+            )
+        }
+
+        _ if handler_args.message_create => {
+            check_arg!(function, "MessageData");
+            (
+                quote! { descord::internals::HandlerValue::MessageData(data) },
+                quote! { descord::Event::MessageCreate },
+            )
+        }
+
+        _ if handler_args.message_update => {
+            check_arg!(function, "MessageData");
+            (
+                quote! { descord::internals::HandlerValue::MessageData(data) },
+                quote! { descord::Event::MessageUpdate },
+            )
+        }
+
+        _ if handler_args.message_delete => {
+            check_arg!(function, "DeletedMessageData");
+            (
+                quote! { descord::internals::HandlerValue::DeletedMessageData(data) },
+                quote! { descord::Event::MessageDelete },
+            )
+        }
+
+        _ if handler_args.reaction_add => {
+            check_arg!(function, "ReactionData");
+
+            (
+                quote! { descord::internals::HandlerValue::ReactionData(data) },
+                quote! { descord::Event::MessageReactionAdd },
+            )
+        }
+
+        _ => panic!("Enable one of {:?} event", handler_args.all_events()),
+    };
+
+    let let_stmt = quote! {
+        let #name = data else {
+            unreachable!()
+        };
+    };
+
+    let expanded = quote! {
+        #function_vis fn #function_name() -> descord::internals::EventHandler {
+            use descord::prelude::*;
+
+            fn f(
+                data: descord::internals::HandlerValue
+            ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'static>> {
+                Box::pin(async move {
+                    #let_stmt
+                    #function_body
+                })
+            }
+
+            internals::EventHandler {
+                event: #event_ty,
+                handler_fn: f,
+            }
+        }
+    };
+
+    TokenStream::from(expanded)
 }
 
 #[proc_macro_attribute]
