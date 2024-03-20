@@ -1,6 +1,6 @@
 [package]
 name = "descord-macros"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Macro implementation crate of descord."
 authors = ["thatmagicalcat <thatmagicalcat@duck.com>"]
