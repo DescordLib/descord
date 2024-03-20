@@ -12,6 +12,7 @@ proc-macro2 = "1.0.79"
 darling = "0.20.8"
 quote = "1.0.35"
 syn = "2.0.51"
+walkdir = "2.5.0"
 
 [lib]
 proc-macro = true
