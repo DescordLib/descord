@@ -49,8 +49,7 @@ macro_rules! type_name {
 macro_rules! check_arg {
     [ $func:ident, $arg:expr ] => {
         if !(
-            $func.sig.inputs.len() == 1
-            && match $func.sig.inputs.first().unwrap() {
+            match $func.sig.inputs.first().unwrap() {
                 syn::FnArg::Typed(x)
                     if match *x.ty {
                         syn::Type::Path(ref path) if path.path.is_ident($arg) => true,
@@ -85,6 +84,18 @@ pub fn event_handler(args: TokenStream, input: TokenStream) -> TokenStream {
     let function_name = &function.sig.ident;
     let function_body = &function.block;
 
+    if function.sig.inputs.len() != 1 {
+        panic!("Expected only one parameter");
+    }
+
+    let param_name = match function.sig.inputs.first().unwrap() {
+        syn::FnArg::Typed(x) => match *x.pat {
+            syn::Pat::Ident(ref ident) => ident,
+            _ => panic!("unknown parameter name"),
+        },
+        _ => panic!("self???"),
+    };
+
     if function.sig.asyncness.is_none() {
         panic!("Function marked with `#[descord::event_handler(...)]` should be async");
     }
@@ -114,7 +125,7 @@ pub fn event_handler(args: TokenStream, input: TokenStream) -> TokenStream {
         _ if handler_args.ready => {
             check_arg!(function, "ReadyData");
             (
-                quote! { descord::internals::HandlerValue::ReadyData(data) },
+                quote! { descord::internals::HandlerValue::ReadyData(#param_name) },
                 quote! { descord::Event::Ready },
             )
         }
@@ -122,7 +133,7 @@ pub fn event_handler(args: TokenStream, input: TokenStream) -> TokenStream {
         _ if handler_args.message_create => {
             check_arg!(function, "Message");
             (
-                quote! { descord::internals::HandlerValue::MessageData(data) },
+                quote! { descord::internals::HandlerValue::MessageData(#param_name) },
                 quote! { descord::Event::MessageCreate },
             )
         }
@@ -130,7 +141,7 @@ pub fn event_handler(args: TokenStream, input: TokenStream) -> TokenStream {
         _ if handler_args.message_update => {
             check_arg!(function, "Message");
             (
-                quote! { descord::internals::HandlerValue::MessageData(data) },
+                quote! { descord::internals::HandlerValue::MessageData(#param_name) },
                 quote! { descord::Event::MessageUpdate },
             )
         }
@@ -138,7 +149,7 @@ pub fn event_handler(args: TokenStream, input: TokenStream) -> TokenStream {
         _ if handler_args.message_delete => {
             check_arg!(function, "DeletedMessageData");
             (
-                quote! { descord::internals::HandlerValue::DeletedMessageData(data) },
+                quote! { descord::internals::HandlerValue::DeletedMessageData(#param_name) },
                 quote! { descord::Event::MessageDelete },
             )
         }
@@ -147,7 +158,7 @@ pub fn event_handler(args: TokenStream, input: TokenStream) -> TokenStream {
             check_arg!(function, "ReactionData");
 
             (
-                quote! { descord::internals::HandlerValue::ReactionData(data) },
+                quote! { descord::internals::HandlerValue::ReactionData(#param_name) },
                 quote! { descord::Event::MessageReactionAdd },
             )
         }
@@ -220,8 +231,8 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
     let function_params = &function.sig.inputs;
     let function_vis = function.vis;
 
-    let error = || panic!("Expected `descord::prelude::Message` as the first argument");
-    match function_params.first() {
+    let error = || -> ! { panic!("Expected `descord::prelude::Message` as the first argument") };
+    let first_param_name = match function_params.first() {
         Some(param) => {
             let param = match param {
                 syn::FnArg::Typed(x) => x,
@@ -232,10 +243,15 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
                 syn::Type::Path(ref path) if path.path.is_ident("Message") => {}
                 _ => error(),
             }
+
+            match *param.pat {
+                syn::Pat::Ident(ref ident) => ident,
+                _ => panic!("unknown param name"),
+            }
         }
 
         _ => error(),
-    }
+    };
 
     let mut param_types = vec![];
     let mut stmts: Vec<proc_macro2::TokenStream> = vec![];
@@ -249,6 +265,8 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
         let syn::Pat::Ident(name) = &*param.pat else {
             panic!();
         };
+
+        println!("name is: {name:?}");
 
         let type_ = (*param.ty).clone();
 
@@ -288,7 +306,7 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
             use descord::prelude::*;
 
             fn f(
-                data: Message,
+                #first_param_name: Message,
                 args: Vec<internals::Value>
             ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'static>> {
                 Box::pin(async move {
