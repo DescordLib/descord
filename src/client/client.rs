@@ -1,16 +1,14 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::Mutex;
 
 use json::object;
 use nanoserde::SerJson;
 
-use crate::consts;
 use crate::consts::intents::GatewayIntent;
-use crate::handlers::EventHandler;
-use crate::internals::*;
+use crate::internals::{EventHandler, *};
 use crate::prelude::{CreateMessageData, MessageData};
 use crate::ws::WsManager;
+use crate::{consts, Event};
 
 lazy_static::lazy_static! {
     pub(crate) static ref TOKEN: Mutex<Option<String>> = Mutex::new(None);
@@ -21,6 +19,7 @@ pub struct Client {
     ws: WsManager,
     token: String,
     commands: HashMap<String, Command>,
+    event_handlers: HashMap<Event, EventHandler>,
     prefix: String,
 }
 
@@ -34,14 +33,20 @@ impl Client {
             ws: WsManager::new(token)
                 .await
                 .expect("Failed to initialize websockets"),
-            commands: HashMap::new(),
             prefix: prefix.to_owned(),
+
+            commands: HashMap::new(),
+            event_handlers: HashMap::new(),
         }
     }
 
-    pub async fn login(self, event_handler: impl EventHandler + std::marker::Sync + 'static) {
+    pub async fn login(self) {
         self.ws
-            .connect(self.intents, event_handler.into(), self.commands.into())
+            .connect(
+                self.intents,
+                self.event_handlers.into(),
+                self.commands.into(),
+            )
             .await;
     }
 
@@ -49,7 +54,17 @@ impl Client {
         &self.token
     }
 
-    pub fn register_commands<const N: usize>(&mut self, commands: [Command; N]) {
+    pub fn register_events(&mut self, events: Vec<EventHandler>) {
+        events.into_iter().for_each(|event| {
+            if self.event_handlers.contains_key(&event.event) {
+                panic!("{:?} is already hooked", event.event);
+            }
+
+            self.event_handlers.insert(event.event, event);
+        });
+    }
+
+    pub fn register_commands(&mut self, commands: Vec<Command>) {
         commands.into_iter().for_each(|mut command| {
             // if a custom prefix is not applied, add the default prefix
             if !command.custom_prefix {
@@ -60,7 +75,7 @@ impl Client {
                 );
             }
 
-            self.commands.insert(command.name.clone(), command);
+            self.commands.insert(command.name.clone(), command.clone());
         });
     }
 }

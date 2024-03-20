@@ -2,6 +2,7 @@ use log::*;
 use nanoserde::DeJson;
 
 use crate::internals::*;
+use crate::models::reaction_response::ReactionResponse;
 
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -25,7 +26,6 @@ use url::Url;
 use crate::consts::opcode::OpCode;
 use crate::consts::{self, payloads};
 use crate::handlers::events::Event;
-use crate::handlers::EventHandler;
 use crate::ws::payload::Payload;
 use crate::{models::*, Client};
 
@@ -53,7 +53,7 @@ impl WsManager {
     pub async fn connect<'a>(
         &'a self,
         intents: u32,
-        event_handler: Arc<impl EventHandler + std::marker::Sync + 'static>,
+        event_handlers: Arc<HashMap<Event, EventHandler>>,
         commands: Arc<HashMap<String, Command>>,
     ) -> Result<()> {
         if let Some(Ok(Message::Text(body))) = self.socket.1.lock().await.next().await {
@@ -87,8 +87,6 @@ impl WsManager {
 
             match payload.operation_code {
                 OpCode::Dispatch => {
-                    let event_handler = Arc::clone(&event_handler);
-
                     info!(
                         "received {} event\npayload:{}",
                         payload
@@ -99,9 +97,11 @@ impl WsManager {
                         json::parse(&payload.raw_json).unwrap().pretty(4)
                     );
 
+                    let event_handlers = Arc::clone(&event_handlers);
                     let commands = Arc::clone(&commands);
+
                     tokio::spawn(async move {
-                        Self::dispatch_event(payload, event_handler, commands).await;
+                        Self::dispatch_event(payload, event_handlers, commands).await;
                     });
                 }
 
@@ -116,25 +116,19 @@ impl WsManager {
 
     async fn dispatch_event(
         payload: Payload,
-        event_handler: Arc<impl EventHandler>,
+        event_handlers: Arc<HashMap<Event, EventHandler>>,
         commands: Arc<HashMap<String, Command>>,
     ) {
         let event = Event::from_str(payload.type_name.as_ref().unwrap().as_str()).unwrap();
-        match event {
+        let data = match event {
             Event::Ready => {
-                let ready_data = ready_response::ReadyResponse::deserialize_json(&payload.raw_json)
-                    .expect("Failed to parse json");
+                let data = ready_response::ReadyResponse::deserialize_json(&payload.raw_json)
+                .unwrap_or_else(|e| {
+                        panic!("{}", &payload.raw_json[e.col-30..e.col]);
+                    });
+                    // .expect("Failed to parse json");
 
-                event_handler.ready(ready_data.data).await;
-
-                // const READY_SEQ: usize = 1;
-                // if payload.sequence == Some(READY_SEQ) {
-                // *self.session_id.lock().unwrap() = Some(ready_data.data.session_id.clone());
-                // *self.resume_gateway_url.lock().unwrap() = Some(format!(
-                //     "{}/?v=10&encoding=json",
-                //     ready_data.data.resume_gateway_url
-                // ));
-                // }
+                HandlerValue::ReadyData(data.data)
             }
 
             Event::MessageCreate => {
@@ -151,7 +145,7 @@ impl WsManager {
                     }
                 }
 
-                event_handler.message_create(message_data.data).await;
+                HandlerValue::MessageData(message_data.data)
             }
 
             Event::MessageUpdate => {
@@ -159,7 +153,7 @@ impl WsManager {
                     message_response::MessageResponse::deserialize_json(&payload.raw_json)
                         .expect("Failed to parse json");
 
-                event_handler.message_update(message_data.data).await;
+                HandlerValue::MessageData(message_data.data)
             }
 
             Event::MessageDelete => {
@@ -169,10 +163,24 @@ impl WsManager {
                     )
                     .expect("Failed to parse json");
 
-                event_handler.message_delete(delete_data.data).await;
+                HandlerValue::DeletedMessageData(delete_data.data)
             }
 
-            _ => error!("{event:?} event is not implemented"),
+            Event::MessageReactionAdd => {
+                let data = ReactionResponse::deserialize_json(&payload.raw_json)
+                    .expect("Failed to parse json");
+
+                HandlerValue::ReactionData(data.data)
+            }
+
+            _ => {
+                error!("{event:?} event is not implemented");
+                return;
+            }
+        };
+
+        if let Some(handler) = event_handlers.get(&event) {
+            handler.call(data).await;
         }
     }
 
