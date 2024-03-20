@@ -2,7 +2,7 @@ use crate::consts::API;
 use crate::models::channel::Channel;
 use crate::models::dm_channel::DirectMessageChannel;
 use crate::models::message_response::CreateMessageData;
-use crate::prelude::MessageData;
+use crate::prelude::{MessageData, User};
 use crate::{client::TOKEN, models::message_edit::MessageEditData};
 
 use futures_util::TryFutureExt;
@@ -45,7 +45,7 @@ pub async fn reply(
 
     let url = format!("{API}/channels/{channel_id}/messages",);
 
-    let resp = reqwest::Client::new()
+    let resp = Client::new()
         .post(url)
         .body(json::stringify(body))
         .headers(get_headers())
@@ -61,14 +61,14 @@ pub async fn reply(
 
 pub async fn get_channel(channel_id: &str) -> Result<Channel, Box<dyn std::error::Error>> {
     let url = format!("{API}/channels/{channel_id}");
-
-    let resp = reqwest::Client::new()
-        .get(url)
-        .headers(get_headers())
-        .send()
-        .await?;
-
+    let resp = Client::new().get(url).headers(get_headers()).send().await?;
     Ok(Channel::deserialize_json(&resp.text().await?)?)
+}
+
+pub async fn get_user(user_id: &str) -> Result<User, Box<dyn std::error::Error>> {
+    let url = format!("{API}/users/{user_id}");
+    let resp = Client::new().get(url).headers(get_headers()).send().await?;
+    Ok(User::deserialize_json(&resp.text().await?)?)
 }
 
 /// Returns true if the operation was successful, false otherwise.
@@ -76,7 +76,7 @@ pub async fn get_channel(channel_id: &str) -> Result<Channel, Box<dyn std::error
 pub async fn delete_message(channel_id: &str, message_id: &str) -> bool {
     let url = format!("{API}/channels/{channel_id}/messages/{message_id}");
 
-    let resp = reqwest::Client::new()
+    let resp = Client::new()
         .delete(url)
         .headers(get_headers())
         .send()
