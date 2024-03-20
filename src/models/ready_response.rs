@@ -2,13 +2,13 @@ use nanoserde::{DeJson, SerJson};
 
 use super::{guild::Guild, user::User};
 
-#[derive(DeJson, SerJson)]
+#[derive(DeJson, SerJson, Debug)]
 pub struct ReadyResponse {
     #[nserde(rename = "d")]
     pub data: ReadyData,
 }
 
-#[derive(DeJson, SerJson)]
+#[derive(DeJson, SerJson, Debug)]
 pub struct ReadyData {
     pub user: User,
     pub session_type: String,
@@ -19,7 +19,7 @@ pub struct ReadyData {
     pub application: ApplicationData,
 }
 
-#[derive(DeJson, SerJson)]
+#[derive(DeJson, SerJson, Debug)]
 pub struct ApplicationData {
     pub id: String,
     pub flags: usize,

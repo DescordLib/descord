@@ -1,6 +1,6 @@
 use nanoserde::{DeJson, SerJson};
 
-#[derive(DeJson, SerJson)]
+#[derive(DeJson, SerJson, Debug)]
 pub struct User {
     pub verified: bool,
     pub username: String,

@@ -2,7 +2,7 @@ use nanoserde::{DeJson, SerJson};
 
 use super::embed::Embed;
 
-#[derive(DeJson, SerJson, Default)]
+#[derive(DeJson, SerJson, Default, Debug)]
 pub struct MessageEditData {
     pub content: Option<String>,
     pub embeds: Option<Vec<Embed>>,

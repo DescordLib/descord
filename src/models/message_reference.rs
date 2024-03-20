@@ -2,7 +2,7 @@ use nanoserde::{DeJson, SerJson};
 
 use super::{author::Author, embed::Embed};
 
-#[derive(DeJson, SerJson, Clone)]
+#[derive(DeJson, SerJson, Clone, Debug)]
 pub struct MessageReference {
     pub tts: bool,
     pub timestamp: String,

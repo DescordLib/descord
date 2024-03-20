@@ -4,7 +4,7 @@ use crate::utils;
 
 use super::message_response::CreateMessageData;
 
-#[derive(DeJson, SerJson, Clone)]
+#[derive(DeJson, SerJson, Clone, Debug)]
 pub struct Author {
     pub username: String,
     #[nserde(rename = "id")]
