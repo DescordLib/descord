@@ -236,7 +236,7 @@ checksum = "7e962a19be5cfc3f3bf6dd8f61eb50107f356ad6270fbb3ed41476571db78be5"
 
 [[package]]
 name = "descord"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "descord-macros",
  "dotenvy",
