@@ -13,19 +13,24 @@ use reqwest::{header::HeaderMap, Response, StatusCode};
 
 // TODO: Error checking in each function
 
-pub async fn send(channel_id: &str, data: impl Into<CreateMessageData>) {
+pub async fn send(channel_id: &str, data: impl Into<CreateMessageData>) -> MessageData {
     let data = data.into();
     let body = data.serialize_json();
 
     let url = format!("{API}/channels/{channel_id}/messages");
 
-    Client::new()
+    let resp = Client::new()
         .post(url)
-        .body(json::stringify(body))
+        .body(body)
         .headers(get_headers())
         .send()
         .await
-        .expect("Failed to send http request");
+        .expect("Failed to send http request")
+        .text()
+        .await
+        .unwrap();
+
+    MessageData::deserialize_json(&resp).unwrap()
 }
 
 pub async fn reply(
@@ -121,6 +126,50 @@ pub async fn get_dm(user_id: &str) -> DirectMessageChannel {
 pub async fn send_dm(user_id: &str, data: impl Into<CreateMessageData>) {
     let dm_channel = get_dm(user_id).await;
     send(&dm_channel.id, data).await;
+}
+
+pub async fn remove_reaction(channel_id: &str, message_id: &str, user_id: &str, emoji: &str) {
+    let url = format!(
+        "{API}/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/{user_id}",
+        emoji = urlencoding::encode(emoji)
+    );
+
+    Client::new()
+        .delete(url)
+        .headers(get_headers())
+        .send()
+        .await
+        .unwrap();
+}
+
+pub async fn react(channel_id: &str, message_id: &str, emoji: &str) {
+    let url = format!(
+        "{API}/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me",
+        emoji = emoji.trim_matches(['<', '>', ':'])
+    );
+
+    Client::new()
+        .put(url)
+        .headers(get_headers())
+        .send()
+        .await
+        .unwrap();
+}
+
+pub async fn get_message(channel_id: &str, message_id: &str) -> MessageData {
+    let url = format!("{API}/channels/{channel_id}/messages/{message_id}");
+
+    let resp = Client::new()
+        .get(url)
+        .headers(get_headers())
+        .send()
+        .await
+        .unwrap()
+        .text()
+        .await
+        .unwrap();
+
+    MessageData::deserialize_json(&resp).unwrap()
 }
 
 fn get_headers() -> HeaderMap {
