@@ -6,7 +6,7 @@ use nanoserde::SerJson;
 
 use crate::consts::intents::GatewayIntent;
 use crate::internals::{EventHandler, *};
-use crate::prelude::{CreateMessageData, MessageData};
+use crate::prelude::{CreateMessageData, Message};
 use crate::ws::WsManager;
 use crate::{consts, Event};
 

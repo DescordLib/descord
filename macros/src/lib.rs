@@ -120,7 +120,7 @@ pub fn event_handler(args: TokenStream, input: TokenStream) -> TokenStream {
         }
 
         _ if handler_args.message_create => {
-            check_arg!(function, "MessageData");
+            check_arg!(function, "Message");
             (
                 quote! { descord::internals::HandlerValue::MessageData(data) },
                 quote! { descord::Event::MessageCreate },
@@ -128,7 +128,7 @@ pub fn event_handler(args: TokenStream, input: TokenStream) -> TokenStream {
         }
 
         _ if handler_args.message_update => {
-            check_arg!(function, "MessageData");
+            check_arg!(function, "Message");
             (
                 quote! { descord::internals::HandlerValue::MessageData(data) },
                 quote! { descord::Event::MessageUpdate },
@@ -220,7 +220,7 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
     let function_params = &function.sig.inputs;
     let function_vis = function.vis;
 
-    let error = || panic!("Expected `descord::prelude::MessageData` as the first argument");
+    let error = || panic!("Expected `descord::prelude::Message` as the first argument");
     match function_params.first() {
         Some(param) => {
             let param = match param {
@@ -229,7 +229,7 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
             };
 
             match *param.ty {
-                syn::Type::Path(ref path) if path.path.is_ident("MessageData") => {}
+                syn::Type::Path(ref path) if path.path.is_ident("Message") => {}
                 _ => error(),
             }
         }
@@ -288,7 +288,7 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
             use descord::prelude::*;
 
             fn f(
-                data: MessageData,
+                data: Message,
                 args: Vec<internals::Value>
             ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'static>> {
                 Box::pin(async move {

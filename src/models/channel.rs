@@ -1,7 +1,7 @@
 use crate::utils;
 use nanoserde::{DeJson, SerJson};
 
-use super::message_response::{CreateMessageData, MessageData};
+use super::message_response::{CreateMessageData, Message};
 
 #[derive(DeJson, SerJson, Debug, Clone)]
 pub struct Channel {
@@ -21,7 +21,7 @@ pub struct Channel {
 }
 
 impl Channel {
-    pub async fn send_message(&self, data: impl Into<CreateMessageData>) -> MessageData {
+    pub async fn send_message(&self, data: impl Into<CreateMessageData>) -> Message {
         utils::send(&self.id, data).await
     }
 }

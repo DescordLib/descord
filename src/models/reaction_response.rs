@@ -3,7 +3,7 @@ use nanoserde::{DeJson, SerJson};
 use crate::utils;
 
 use super::{
-    channel::Channel, emoji::Emoji, guild::GuildMember, message_response::MessageData, user::User,
+    channel::Channel, emoji::Emoji, guild::GuildMember, message_response::Message, user::User,
 };
 
 #[derive(DeJson, SerJson, Clone, Debug)]
@@ -34,7 +34,7 @@ impl ReactionData {
         utils::get_user(&self.user_id).await
     }
 
-    pub async fn get_message(&self) -> MessageData {
+    pub async fn get_message(&self) -> Message {
         utils::get_message(&self.channel_id, &self.message_id).await
     }
 

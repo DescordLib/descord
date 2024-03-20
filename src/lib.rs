@@ -23,7 +23,7 @@ pub mod prelude {
         intents::GatewayIntent,
         models::{
             embed::*, embed_builder::EmbedBuilder, guild::Guild, message_edit::MessageEditData,
-            message_response::CreateMessageData, message_response::MessageData,
+            message_response::CreateMessageData, message_response::Message,
             channel::*,
             reaction_response::ReactionData, ready_response::*, user::User,
         },

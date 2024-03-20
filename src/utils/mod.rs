@@ -2,7 +2,7 @@ use crate::consts::API;
 use crate::models::channel::Channel;
 use crate::models::dm_channel::DirectMessageChannel;
 use crate::models::message_response::CreateMessageData;
-use crate::prelude::{MessageData, User};
+use crate::prelude::{Message, User};
 use crate::{client::TOKEN, models::message_edit::MessageEditData};
 
 use futures_util::TryFutureExt;
@@ -13,7 +13,7 @@ use reqwest::{header::HeaderMap, Response, StatusCode};
 
 // TODO: Error checking in each function
 
-pub async fn send(channel_id: &str, data: impl Into<CreateMessageData>) -> MessageData {
+pub async fn send(channel_id: &str, data: impl Into<CreateMessageData>) -> Message {
     let data = data.into();
     let body = data.serialize_json();
 
@@ -30,14 +30,14 @@ pub async fn send(channel_id: &str, data: impl Into<CreateMessageData>) -> Messa
         .await
         .unwrap();
 
-    MessageData::deserialize_json(&resp).unwrap()
+    Message::deserialize_json(&resp).unwrap()
 }
 
 pub async fn reply(
     message_id: &str,
     channel_id: &str,
     data: impl Into<CreateMessageData>,
-) -> MessageData {
+) -> Message {
     let data: CreateMessageData = data.into();
 
     let mut body = json::parse(&data.serialize_json()).unwrap();
@@ -61,7 +61,7 @@ pub async fn reply(
         .await
         .unwrap();
 
-    MessageData::deserialize_json(&resp).unwrap()
+    Message::deserialize_json(&resp).unwrap()
 }
 
 pub async fn get_channel(channel_id: &str) -> Result<Channel, Box<dyn std::error::Error>> {
@@ -156,7 +156,7 @@ pub async fn react(channel_id: &str, message_id: &str, emoji: &str) {
         .unwrap();
 }
 
-pub async fn get_message(channel_id: &str, message_id: &str) -> MessageData {
+pub async fn get_message(channel_id: &str, message_id: &str) -> Message {
     let url = format!("{API}/channels/{channel_id}/messages/{message_id}");
 
     let resp = Client::new()
@@ -169,7 +169,7 @@ pub async fn get_message(channel_id: &str, message_id: &str) -> MessageData {
         .await
         .unwrap();
 
-    MessageData::deserialize_json(&resp).unwrap()
+    Message::deserialize_json(&resp).unwrap()
 }
 
 fn get_headers() -> HeaderMap {

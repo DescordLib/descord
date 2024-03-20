@@ -30,14 +30,14 @@ pub enum Value {
 #[derive(Debug, Clone)]
 pub enum HandlerValue {
     ReadyData(ReadyData),
-    MessageData(MessageData),
+    MessageData(Message),
     DeletedMessageData(DeletedMessageData),
     ReactionData(ReactionData),
 }
 
 pub type HandlerFn =
     fn(
-        MessageData,
+        Message,
         Vec<Value>,
     ) -> std::pin::Pin<Box<dyn futures_util::Future<Output = ()> + Send + 'static>>;
 
@@ -68,7 +68,7 @@ pub struct Command {
 }
 
 impl Command {
-    pub async fn call(&self, data: MessageData) {
+    pub async fn call(&self, data: Message) {
         let split = data.content.split_whitespace().collect::<Vec<_>>();
 
         // -1 because of the command name

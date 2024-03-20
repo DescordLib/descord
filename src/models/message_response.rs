@@ -11,11 +11,11 @@ use super::{author::Author, embed::Embed, message_reference::MessageReference};
 #[derive(DeJson, SerJson, Clone, Debug)]
 pub struct MessageResponse {
     #[nserde(rename = "d")]
-    pub data: MessageData,
+    pub data: Message,
 }
 
 #[derive(DeJson, SerJson, Clone, Debug)]
-pub struct MessageData {
+pub struct Message {
     #[nserde(default)]
     pub tts: bool,
 
@@ -50,12 +50,12 @@ pub struct MessageData {
     // mentions, mention_roles, member, etc.
 }
 
-impl MessageData {
-    pub async fn reply(&self, data: impl Into<CreateMessageData>) -> MessageData {
+impl Message {
+    pub async fn reply(&self, data: impl Into<CreateMessageData>) -> Message {
         utils::reply(&self.id, &self.channel_id, data).await
     }
 
-    pub async fn send_in_channel(&self, data: impl Into<CreateMessageData>) -> MessageData {
+    pub async fn send_in_channel(&self, data: impl Into<CreateMessageData>) -> Message {
         utils::send(&self.channel_id, data).await
     }
 
