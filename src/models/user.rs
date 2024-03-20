@@ -1,5 +1,7 @@
 use nanoserde::{DeJson, SerJson};
 
+use crate::utils;
+
 #[derive(DeJson, SerJson, Debug, Clone)]
 pub struct User {
     #[nserde(default)]
@@ -38,3 +40,4 @@ impl User {
         format!("<@{0}>", self.id)
     }
 }
+

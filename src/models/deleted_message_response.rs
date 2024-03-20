@@ -6,7 +6,7 @@ pub struct DeletedMessageResponse {
     pub data: DeletedMessageData,
 }
 
-#[derive(DeJson, SerJson, Debug)]
+#[derive(DeJson, SerJson, Debug, Clone)]
 pub struct DeletedMessageData {
     #[nserde(rename = "id")]
     pub message_id: String,

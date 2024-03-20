@@ -10,3 +10,5 @@ pub mod message_reference;
 pub mod message_response;
 pub mod ready_response;
 pub mod user;
+pub mod reaction_response;
+pub mod emoji;

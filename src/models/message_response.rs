@@ -46,7 +46,6 @@ pub struct MessageData {
 
     pub guild_id: Option<String>,
     pub id: String,
-
     // TODO
     // mentions, mention_roles, member, etc.
 }
@@ -56,8 +55,8 @@ impl MessageData {
         utils::reply(&self.id, &self.channel_id, data).await
     }
 
-    pub async fn send_in_channel(&self, data: impl Into<CreateMessageData>) {
-        utils::send(&self.channel_id, data).await;
+    pub async fn send_in_channel(&self, data: impl Into<CreateMessageData>) -> MessageData {
+        utils::send(&self.channel_id, data).await
     }
 
     pub async fn get_channel(&self) -> Result<Channel, Box<dyn std::error::Error>> {
@@ -75,6 +74,11 @@ impl MessageData {
 
     pub async fn edit(&self, data: impl Into<MessageEditData>) {
         utils::edit_message(&self.channel_id, &self.id, data).await;
+    }
+
+    /// Valid emoji formats: `name`, `name:id`
+    pub async fn react(&self, emoji: &str) {
+        utils::react(&self.channel_id, &self.id, emoji).await;
     }
 }
 

@@ -8,7 +8,7 @@ pub struct ReadyResponse {
     pub data: ReadyData,
 }
 
-#[derive(DeJson, SerJson, Debug)]
+#[derive(DeJson, SerJson, Debug, Clone)]
 pub struct ReadyData {
     pub user: User,
     pub session_type: String,
@@ -19,7 +19,7 @@ pub struct ReadyData {
     pub application: ApplicationData,
 }
 
-#[derive(DeJson, SerJson, Debug)]
+#[derive(DeJson, SerJson, Debug, Clone)]
 pub struct ApplicationData {
     pub id: String,
     pub flags: usize,

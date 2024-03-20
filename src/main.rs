@@ -1,4 +1,9 @@
 use descord::prelude::*;
+use tokio::sync::Mutex;
+
+lazy_static::lazy_static! {
+    static ref BOT_ID: Mutex<String> = Mutex::new(String::new());
+}
 
 #[tokio::main]
 async fn main() {
@@ -7,15 +12,15 @@ async fn main() {
 
     let mut client = Client::new(
         &std::env::var("DISCORD_TOKEN").unwrap(),
-        GatewayIntent::MESSAGE_CONTENT
-            | GatewayIntent::GUILD_MESSAGES
-            | GatewayIntent::DIRECT_MESSAGES,
+        GatewayIntent::ALL,
         "!",
     )
     .await;
 
-    register_all_commands!();
-    client.login(Handler).await;
+    register_all_commands!(client => []);
+
+    client.register_events(vec![ready(), reaction_add()]);
+    client.login().await;
 }
 
 #[command]
@@ -60,7 +65,51 @@ async fn user(data: MessageData, user: User) {
     .await;
 }
 
-struct Handler;
+#[command]
+async fn counter(data: MessageData) {
+    let msg = data.send_in_channel("Count: 0").await;
 
-#[async_trait]
-impl EventHandler for Handler {}
+    msg.react("⬆").await;
+    msg.react("⬇").await;
+}
+
+#[command]
+async fn react(data: MessageData, emoji: String) {
+    println!("reacting");
+    data.react(&emoji).await;
+}
+
+#[event_handler(ready)]
+async fn ready(data: ReadyData) {
+    println!(
+        "Logged in as: {}#{}",
+        data.user.username, data.user.discriminator
+    );
+
+    *BOT_ID.lock().await = data.user.id.into();
+}
+
+#[event_handler(reaction_add)]
+async fn reaction_add(data: ReactionData) {
+    if &data.user_id == BOT_ID.lock().await.as_str() {
+        return;
+    }
+
+    let msg = data.get_message().await;
+    let (counter_message, count) = msg.content.split_once(" ").unwrap();
+    let mut count = count.parse::<isize>().unwrap();
+
+    if data.emoji.name == "⬆" {
+        count += 1;
+        tokio::join!(
+            data.remove_reaction(),
+            msg.edit(format!("{counter_message} {count}"))
+        );
+    } else if data.emoji.name == "⬇" {
+        count -= 1;
+        tokio::join!(
+            data.remove_reaction(),
+            msg.edit(format!("{counter_message} {count}"))
+        );
+    }
+}
