@@ -153,8 +153,13 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 pub fn register_all_commands(input: TokenStream) -> TokenStream {
-    let paths: Vec<String> = if !input.is_empty() {
-        parse_macro_input!(input as syn::ExprArray)
+    let RegisterCmd {
+        client_obj,
+        file_array,
+    } = parse_macro_input!(input as RegisterCmd);
+
+    let paths: Vec<String> = if !file_array.elems.is_empty() {
+        file_array
             .elems
             .into_iter()
             .map(|elem| {
@@ -192,8 +197,26 @@ pub fn register_all_commands(input: TokenStream) -> TokenStream {
     }
 
     let expanded = quote! {
-        client.register_commands([#(#commands()),*]);
+        #client_obj.register_commands(vec![#(#commands()),*]);
     };
 
     TokenStream::from(expanded)
+}
+
+struct RegisterCmd {
+    client_obj: Ident,
+    file_array: ExprArray,
+}
+
+impl Parse for RegisterCmd {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let client_obj = input.parse()?;
+        input.parse::<Token![=>]>()?;
+        let file_array = input.parse()?;
+
+        Ok(Self {
+            client_obj,
+            file_array,
+        })
+    }
 }
