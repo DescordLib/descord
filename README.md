@@ -14,8 +14,10 @@ async fn main() {
     )
     .await;
 
-    client.register_commands([ping()]);
-    client.login(Handler).await;
+    client.register_commands(vec![ping()]);
+    client.register_events(vec![ready()]);
+
+    client.login().await;
 }
 
 #[descord::command("ping")]
@@ -27,15 +29,11 @@ async fn ping(data: MessageData) {
     msg.edit(format!("Pong! `{}ms`", latency)).await;
 }
 
-struct Handler;
-
-#[async_trait]
-impl EventHandler for Handler {
-    async fn ready(&self, ready_data: ReadyData) {
-        println!(
-            "Logged in as: {}#{}",
-            ready_data.user.username, ready_data.user.discriminator
-        );
-    }
+#[descord::event_handler(ready)]
+async fn ready(data: ReadyData) {
+    println!(
+        "Logged in as: {}#{}",
+        data.user.username, data.user.discriminator
+    );
 }
 ```
