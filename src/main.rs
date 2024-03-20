@@ -96,25 +96,25 @@ async fn ready(data: ReadyData) {
 }
 
 #[event_handler]
-async fn reaction_add(data: ReactionData) {
-    if &data.user_id == BOT_ID.lock().await.as_str() {
+async fn reaction_add(reaction: Reaction) {
+    if &reaction.user_id == BOT_ID.lock().await.as_str() {
         return;
     }
 
-    let msg = data.get_message().await;
+    let msg = reaction.get_message().await;
     let (counter_message, count) = msg.content.split_once(" ").unwrap();
     let mut count = count.parse::<isize>().unwrap();
 
-    if data.emoji.name == "⬆" {
+    if reaction.emoji.name == "⬆" {
         count += 1;
         tokio::join!(
-            data.remove_reaction(),
+            reaction.remove_reaction(),
             msg.edit(format!("{counter_message} {count}"))
         );
-    } else if data.emoji.name == "⬇" {
+    } else if reaction.emoji.name == "⬇" {
         count -= 1;
         tokio::join!(
-            data.remove_reaction(),
+            reaction.remove_reaction(),
             msg.edit(format!("{counter_message} {count}"))
         );
     }

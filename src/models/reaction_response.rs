@@ -9,11 +9,11 @@ use super::{
 #[derive(DeJson, SerJson, Clone, Debug)]
 pub struct ReactionResponse {
     #[nserde(rename = "d")]
-    pub data: ReactionData,
+    pub data: Reaction,
 }
 
 #[derive(DeJson, SerJson, Debug, Clone)]
-pub struct ReactionData {
+pub struct Reaction {
     pub user_id: String,
     pub message_id: String,
     #[nserde(default)]
@@ -25,7 +25,7 @@ pub struct ReactionData {
     pub guild_id: Option<String>,
 }
 
-impl ReactionData {
+impl Reaction {
     pub async fn get_channel(&self) -> Result<Channel, Box<dyn std::error::Error>> {
         utils::get_channel(&self.channel_id).await
     }

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::handlers::events::Event;
 use crate::models::channel::Channel;
 use crate::models::deleted_message_response::DeletedMessageData;
-use crate::models::reaction_response::ReactionData;
+use crate::models::reaction_response::Reaction;
 use crate::prelude::*;
 use crate::utils::*;
 use futures_util::FutureExt;
@@ -32,7 +32,7 @@ pub enum HandlerValue {
     ReadyData(ReadyData),
     MessageData(Message),
     DeletedMessageData(DeletedMessageData),
-    ReactionData(ReactionData),
+    ReactionData(Reaction),
 }
 
 pub type HandlerFn =

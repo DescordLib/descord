@@ -3,7 +3,7 @@ name = "descord-macros"
 version = "0.1.1"
 edition = "2021"
 description = "Macro implementation crate of descord."
-authors = ["thatmagicalcat <thatmagicalcat@duck.com>"]
+authors = ["The descord contributors"]
 repository = "https://github.com/thatmagicalcat/descord"
 license = "GPL-3.0-only"
 

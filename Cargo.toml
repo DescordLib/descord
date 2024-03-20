@@ -4,7 +4,7 @@ version = "0.1.7"
 edition = "2021"
 license = "GPL-3.0-only"
 description = "A minimal discord api wrapper."
-authors = ["thatmagicalcat <thatmagicalcat@duck.com>"]
+authors = ["The descord contributors"]
 repository = "https://github.com/thatmagicalcat/descord"
 readme = "README.md"
 
@@ -17,7 +17,7 @@ json = "0.12.4"
 lazy_static = "1.4.0"
 log = "0.4.21"
 nanoserde = "0.1.37"
-reqwest = "0.11.26"
+reqwest = "0.12.0"
 tokio = { version = "1.36.0", features = ["full"] }
 tokio-tungstenite = { version = "0.21.0", features = ["native-tls"] }
 url = "2.5.0"

@@ -25,7 +25,7 @@ pub mod prelude {
             embed::*, embed_builder::EmbedBuilder, guild::Guild, message_edit::MessageEditData,
             message_response::CreateMessageData, message_response::Message,
             channel::*,
-            reaction_response::ReactionData, ready_response::*, user::User,
+            reaction_response::Reaction, ready_response::*, user::User,
         },
         Payload,
     };

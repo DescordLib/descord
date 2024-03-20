@@ -46,21 +46,6 @@ macro_rules! type_name {
     };
 }
 
-macro_rules! check_arg {
-    [ $func:ident, $arg:expr ] => {
-        if !(
-            match $func.sig.inputs.first().unwrap() {
-                syn::FnArg::Typed(x)
-                    if match *x.ty {
-                        syn::Type::Path(ref path) if path.path.is_ident($arg) => true,
-                        _ => false,
-                    } => true,
-                _ => false,
-            }
-        ) { panic!("Expected a function with one parameter `{}`", $arg); }
-    };
-}
-
 #[derive(Debug, FromMeta)]
 struct CommandArgs {
     #[darling(default)]
@@ -80,7 +65,6 @@ event_handler_args![
 macro_rules! event_case {
     ($handler_args:ident, $function:ident, $param_name:ident, $event_name:ident, $handler_value:ident, $event_type:ident) => {
         if $handler_args.$event_name || $function.sig.ident.to_string().to_uppercase() == stringify!($event_name).to_uppercase() {
-            check_arg!($function, stringify!($handler_value));
             Some((
                 quote! { descord::internals::HandlerValue::$handler_value(#$param_name) },
                 quote! { descord::Event::$event_type },
