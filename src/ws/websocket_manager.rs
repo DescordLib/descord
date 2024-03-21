@@ -132,12 +132,12 @@ impl WsManager {
         let mut event = Event::from_str(payload.type_name.as_ref().unwrap().as_str()).unwrap();
         let data = match event {
             Event::Ready => {
-                let data = ReadyResponse::deserialize_json(&payload.raw_json)?;
+                let data = ReadyResponse::deserialize_json(&payload.raw_json).unwrap();
                 data.data.into()
             }
 
             Event::MessageCreate => {
-                let message_data = MessageResponse::deserialize_json(&payload.raw_json)?;
+                let message_data = MessageResponse::deserialize_json(&payload.raw_json).unwrap();
 
                 MESSAGE_CACHE
                     .lock()
@@ -157,12 +157,12 @@ impl WsManager {
             }
 
             Event::MessageUpdate => {
-                let message_data = MessageResponse::deserialize_json(&payload.raw_json)?;
+                let message_data = MessageResponse::deserialize_json(&payload.raw_json).unwrap();
                 message_data.data.into()
             }
 
             Event::MessageDelete => {
-                let data = DeletedMessageResponse::deserialize_json(&payload.raw_json)?;
+                let data = DeletedMessageResponse::deserialize_json(&payload.raw_json).unwrap();
 
                 if let Some(cached_data) = MESSAGE_CACHE.lock().await.pop(&data.data.message_id) {
                     if let Some(handler) = event_handlers.get(&Event::MessageDeleteRaw).cloned() {
@@ -179,12 +179,12 @@ impl WsManager {
             }
 
             Event::MessageReactionAdd => {
-                let data = ReactionResponse::deserialize_json(&payload.raw_json)?;
+                let data = ReactionResponse::deserialize_json(&payload.raw_json).unwrap();
                 data.data.into()
             }
 
             Event::GuildCreate => {
-                let data = GuildCreateResponse::deserialize_json(&payload.raw_json)?;
+                let data = GuildCreateResponse::deserialize_json(&payload.raw_json).unwrap();
                 data.data.into()
             }
 

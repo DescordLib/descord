@@ -37,8 +37,9 @@ pub struct Message {
     pub content: String,
 
     pub channel_id: String,
+    #[nserde(default)]
     pub embeds: Vec<Embed>,
-    pub author: Author,
+    pub author: Option<Author>,
 
     #[nserde(default)]
     pub referenced_message: Option<MessageReference>,

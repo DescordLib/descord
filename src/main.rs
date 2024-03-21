@@ -29,24 +29,49 @@ async fn main() {
     client.login().await;
 }
 
-#[event_handler]
+#[descord::event_handler]
 async fn message_delete_raw(_: DeletedMessage) {
     println!("message deleted");
 }
 
-#[event_handler]
+#[descord::event_handler]
 async fn message_delete(data: Message) {
     println!("cached message deleted: {}", data.content);
 }
 
-#[event_handler]
+#[descord::event_handler]
 async fn guild_create(data: GuildCreate) {
     println!("Guild: {}", data.name);
 }
 
-#[command]
+#[descord::command(name = "dm")]
 async fn dm(msg: Message) {
-    msg.author.send_dm("You've asked for it!").await;
+    msg.author.unwrap().send_dm("You've asked for it!").await;
+}
+
+#[descord::event_handler]
+pub async fn message_create(message: Message) {
+    if !message.content.starts_with("!!oogway") { return; }
+
+    let (_, text) = message.content.split_once(" ").unwrap();
+    let encoded_text = text.replace(" ", "%20");
+    let embed = EmbedBuilder::new()
+        .color(Color::Teal)
+        .image(EmbedImage {
+            url: format!("https://api.popcat.xyz/oogway?text={}", encoded_text),
+            proxy_url: None,
+            height: None,
+            width: None,
+        })
+        .build();
+
+
+    message
+        .reply(CreateMessageData {
+            embeds: vec![embed],
+            ..Default::default()
+        })
+        .await;
 }
 
 #[command]
