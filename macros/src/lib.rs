@@ -31,7 +31,7 @@ macro_rules! event_handler_args {
                 &[$(stringify!($event_name),)*]
             }
 
-            pub fn get(&self, fn_name: &str, param_name: &syn::PatIdent) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
+            pub fn get(&self, fn_name: &str, param_name: &proc_macro2::TokenStream) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
                 match () {
                     $(
                         _ if self.$event_name
@@ -65,6 +65,18 @@ macro_rules! type_name {
     };
 }
 
+#[rustfmt::ignore]
+event_handler_args![
+//  event switch       => event type         : event data type
+    ready              => Ready              : ReadyData,
+    message_create     => MessageCreate      : Message,
+    message_delete     => MessageDelete      : Message,
+    message_delete_raw => MessageDeleteRaw   : DeletedMessage,
+    message_update     => MessageUpdate      : MessageData,
+    reaction_add       => MessageReactionAdd : Reaction,
+    guild_create       => GuildCreate        : GuildCreate,
+];
+
 #[derive(Debug, FromMeta)]
 struct CommandArgs {
     #[darling(default)]
@@ -72,17 +84,6 @@ struct CommandArgs {
     #[darling(default)]
     prefix: Option<String>,
 }
-
-#[rustfmt::ignore]
-event_handler_args![
-//  event switch   => event type         : event data type
-    ready          => Ready              : ReadyData,
-    message_create => MessageCreate      : Message,
-    message_delete => MessageDelete      : DeletedMessage,
-    message_update => MessageUpdate      : MessageData,
-    reaction_add   => MessageReactionAdd : Reaction,
-    guild_create   => GuildCreate        : GuildCreate,
-];
 
 #[proc_macro_attribute]
 pub fn event_handler(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -97,7 +98,8 @@ pub fn event_handler(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let param_name = match function.sig.inputs.first().unwrap() {
         syn::FnArg::Typed(x) => match *x.pat {
-            syn::Pat::Ident(ref ident) => ident,
+            syn::Pat::Ident(ref ident) => quote! { #ident },
+            syn::Pat::Wild(ref ident) => quote! { #ident },
             _ => panic!("unknown parameter name"),
         },
         _ => panic!("self???"),
@@ -121,7 +123,7 @@ pub fn event_handler(args: TokenStream, input: TokenStream) -> TokenStream {
         }
     };
 
-    let (name, event_ty) = handler_args.get(&function_name.to_string(), param_name);
+    let (name, event_ty) = handler_args.get(&function_name.to_string(), &param_name);
 
     let let_stmt = quote! {
         let #name = data else {
