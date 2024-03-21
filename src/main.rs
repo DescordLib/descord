@@ -29,43 +29,8 @@ async fn main() {
     client.login().await;
 }
 
-#[event_handler(ready)]
-async fn ready(data: ReadyData) {
-    println!(
-        "Logged in as: {}#{}",
-        data.user.username, data.user.discriminator
-    );
-
-    *BOT_ID.lock().await = data.user.id.into();
-}
-
-#[event_handler(reaction_add)]
-async fn reaction_add(data: ReactionData) {
-    if &data.user_id == BOT_ID.lock().await.as_str() {
-        return;
-    }
-
-    let msg = data.get_message().await;
-    let (counter_message, count) = msg.content.split_once(" ").unwrap();
-    let mut count = count.parse::<isize>().unwrap();
-
-    if data.emoji.name == "⬆" {
-        count += 1;
-        tokio::join!(
-            data.remove_reaction(),
-            msg.edit(format!("{counter_message} {count}"))
-        );
-    } else if data.emoji.name == "⬇" {
-        count -= 1;
-        tokio::join!(
-            data.remove_reaction(),
-            msg.edit(format!("{counter_message} {count}"))
-        );
-    }
-}
-
-#[event_handler(guild_create)]
-async fn guild_create(data: GuildCreateData) {
+#[event_handler]
+async fn guild_create(data: GuildCreate) {
     println!("Guild: {}", data.name);
 }
 
