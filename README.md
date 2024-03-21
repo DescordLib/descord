@@ -29,7 +29,8 @@ async fn ping(data: MessageData) {
     msg.edit(format!("Pong! `{}ms`", latency)).await;
 }
 
-#[descord::event_handler(ready)]
+// Event type will be inferred from function name
+#[descord::event_handler]
 async fn ready(data: ReadyData) {
     println!(
         "Logged in as: {}#{}",
