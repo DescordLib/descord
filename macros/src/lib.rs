@@ -6,7 +6,7 @@ use syn::parse::{Parse, ParseStream};
 use syn::{parse_macro_input, ExprArray, Ident, ItemFn, Token};
 
 macro_rules! event_handler_args {
-    [ $($event_name:ident),* ] => {
+    [ $($event_name:ident),* $(,)? ] => {
         #[allow(dead_code)]
         #[derive(Debug, FromMeta)]
         struct EventHandlerArgs {
@@ -59,7 +59,8 @@ event_handler_args![
     message_create,
     message_delete,
     message_update,
-    reaction_add
+    reaction_add,
+    guild_create,
 ];
 
 macro_rules! event_case {
@@ -114,10 +115,11 @@ pub fn event_handler(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let (name, event_ty) =
         event_case!(handler_args, function, param_name, ready, ReadyData, Ready)
-            .or_else(|| event_case!(handler_args, function, param_name, message_create, MessageData, MessageCreate))
-            .or_else(|| event_case!(handler_args, function, param_name, message_update, MessageData, MessageUpdate))
-            .or_else(|| event_case!(handler_args, function, param_name, message_delete, DeletedMessageData, MessageDelete))
-            .or_else(|| event_case!(handler_args, function, param_name, reaction_add, ReactionData, MessageReactionAdd))
+            .or_else(|| event_case!(handler_args, function, param_name, message_create, Message, MessageCreate))
+            .or_else(|| event_case!(handler_args, function, param_name, message_update, Message, MessageUpdate))
+            .or_else(|| event_case!(handler_args, function, param_name, message_delete, DeletedMessage, MessageDelete))
+            .or_else(|| event_case!(handler_args, function, param_name, reaction_add, Reaction, MessageReactionAdd))
+            .or_else(|| event_case!(handler_args, function, param_name, guild_create, GuildCreate, GuildCreate))
             .unwrap_or_else(|| panic!("Enable one of {:?} event", handler_args.all_events()));
 
     let let_stmt = quote! {
@@ -219,8 +221,6 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
         let syn::Pat::Ident(name) = &*param.pat else {
             panic!();
         };
-
-        println!("name is: {name:?}");
 
         let type_ = (*param.ty).clone();
 

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::handlers::events::Event;
 use crate::models::channel::Channel;
-use crate::models::deleted_message_response::DeletedMessageData;
+use crate::models::deleted_message_response::DeletedMessage;
 use crate::models::reaction_response::Reaction;
 use crate::prelude::*;
 use crate::utils::*;
@@ -30,10 +30,10 @@ pub enum Value {
 #[derive(Debug, Clone)]
 pub enum HandlerValue {
     ReadyData(ReadyData),
-    MessageData(Message),
+    Message(Message),
     DeletedMessage(DeletedMessage),
-    ReactionData(ReactionData),
-    GuildCreateData(GuildCreateData),
+    Reaction(Reaction),
+    GuildCreate(GuildCreate),
 }
 
 pub type HandlerFn =
