@@ -6,7 +6,7 @@ use syn::parse::{Parse, ParseStream};
 use syn::{parse_macro_input, ExprArray, Ident, ItemFn, Token};
 
 macro_rules! event_handler_args {
-    [ $($event_name:ident),* $(,)? ] => {
+    [ $($event_name:ident => $event_ty:ident:$arg_type:ident),* $(,)? ] => {
         #[allow(dead_code)]
         #[derive(Debug, FromMeta)]
         struct EventHandlerArgs {
@@ -29,6 +29,25 @@ macro_rules! event_handler_args {
             /// Returns the name of all the events.
             pub fn all_events(&self) -> &'static [&'static str] {
                 &[$(stringify!($event_name),)*]
+            }
+
+            pub fn get(&self, fn_name: &str, param_name: &syn::PatIdent) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
+                match () {
+                    $(
+                        _ if self.$event_name
+                            || fn_name.to_lowercase() == stringify!($event_name).to_lowercase()
+                        => (
+                            quote! { descord::internals::HandlerValue::$arg_type(#param_name) },
+                            quote! { descord::Event::$event_ty },
+                        ),
+                    )*
+
+                    _ => panic!("Enable one of {:?} event", self.all_events()),
+                }
+            }
+
+            pub fn check_arg(&self) {
+
             }
         }
     };
@@ -54,27 +73,16 @@ struct CommandArgs {
     prefix: Option<String>,
 }
 
+#[rustfmt::ignore]
 event_handler_args![
-    ready,
-    message_create,
-    message_delete,
-    message_update,
-    reaction_add,
-    guild_create,
+//  event switch   => event type         : event data type
+    ready          => Ready              : ReadyData,
+    message_create => MessageCreate      : Message,
+    message_delete => MessageDelete      : DeletedMessage,
+    message_update => MessageUpdate      : MessageData,
+    reaction_add   => MessageReactionAdd : Reaction,
+    guild_create   => GuildCreate        : GuildCreate,
 ];
-
-macro_rules! event_case {
-    ($handler_args:ident, $function:ident, $param_name:ident, $event_name:ident, $handler_value:ident, $event_type:ident) => {
-        if $handler_args.$event_name || $function.sig.ident.to_string().to_uppercase() == stringify!($event_name).to_uppercase() {
-            Some((
-                quote! { descord::internals::HandlerValue::$handler_value(#$param_name) },
-                quote! { descord::Event::$event_type },
-            ))
-        } else {
-            None
-        }
-    };
-}
 
 #[proc_macro_attribute]
 pub fn event_handler(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -113,14 +121,7 @@ pub fn event_handler(args: TokenStream, input: TokenStream) -> TokenStream {
         }
     };
 
-    let (name, event_ty) =
-        event_case!(handler_args, function, param_name, ready, ReadyData, Ready)
-            .or_else(|| event_case!(handler_args, function, param_name, message_create, Message, MessageCreate))
-            .or_else(|| event_case!(handler_args, function, param_name, message_update, Message, MessageUpdate))
-            .or_else(|| event_case!(handler_args, function, param_name, message_delete, DeletedMessage, MessageDelete))
-            .or_else(|| event_case!(handler_args, function, param_name, reaction_add, Reaction, MessageReactionAdd))
-            .or_else(|| event_case!(handler_args, function, param_name, guild_create, GuildCreate, GuildCreate))
-            .unwrap_or_else(|| panic!("Enable one of {:?} event", handler_args.all_events()));
+    let (name, event_ty) = handler_args.get(&function_name.to_string(), param_name);
 
     let let_stmt = quote! {
         let #name = data else {
