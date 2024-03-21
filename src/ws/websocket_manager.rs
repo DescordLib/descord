@@ -5,6 +5,7 @@ use nanoserde::DeJson;
 use crate::internals::*;
 
 use crate::models::*;
+use crate::models::ready_response::ReadyResponse;
 use deleted_message_response::DeletedMessageResponse;
 use message_response::MessageResponse;
 use reaction_response::ReactionResponse;
@@ -129,7 +130,7 @@ impl WsManager {
         let event = Event::from_str(payload.type_name.as_ref().unwrap().as_str()).unwrap();
         let data = match event {
             Event::Ready => {
-                let data = ready_response::ReadyResponse::deserialize_json(&payload.raw_json)?;
+                let data = ReadyResponse::deserialize_json(&payload.raw_json)?;
                 HandlerValue::ReadyData(data.data)
             }
 

@@ -31,7 +31,6 @@ pub struct Message {
     #[nserde(default)]
     pub flags: usize,
 
-    #[nserde(default)]
     pub edited_timestamp: Option<String>,
 
     #[nserde(default)]

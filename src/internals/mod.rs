@@ -8,6 +8,23 @@ use crate::prelude::*;
 use crate::utils::*;
 use futures_util::FutureExt;
 
+macro_rules! implemented_enum {
+    [ $vis:vis enum $name:ident { $($variant:ident),* $(,)? } ] => {
+        #[derive(Debug, Clone)]
+        $vis enum $name {
+            $($variant($variant),)*
+        }
+
+        $(
+            impl From<$variant> for $name {
+                fn from(value: $variant) -> Self {
+                    HandlerValue::$variant(value)
+                }
+            }
+        )*
+    };
+}
+
 /// Paramter type info (meant to be used in attribute macro).
 #[derive(Debug, Clone, Copy)]
 pub enum ParamType {
@@ -27,13 +44,14 @@ pub enum Value {
     User(User),
 }
 
-#[derive(Debug, Clone)]
-pub enum HandlerValue {
-    ReadyData(ReadyData),
-    Message(Message),
-    DeletedMessage(DeletedMessage),
-    Reaction(Reaction),
-    GuildCreate(GuildCreate),
+implemented_enum! {
+    pub enum HandlerValue {
+        ReadyData,
+        Message,
+        DeletedMessage,
+        Reaction,
+        GuildCreate,
+    }
 }
 
 pub type HandlerFn =
