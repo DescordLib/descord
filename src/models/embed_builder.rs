@@ -57,6 +57,11 @@ impl EmbedBuilder {
         self
     }
 
+    pub fn video(mut self, video: embed::EmbedVideo) -> Self {
+        self.embed.video = Some(video);
+        self
+    }
+
     pub fn author(mut self, author: embed::EmbedAuthor) -> Self {
         self.embed.author = Some(author);
         self
