@@ -1,6 +1,6 @@
 use nanoserde::{DeJson, SerJson};
 
-use super::{guild::Guild, user::User};
+use super::{guild::PartialGuild, user::User};
 
 #[derive(DeJson, SerJson, Debug)]
 pub struct ReadyResponse {
@@ -14,7 +14,7 @@ pub struct ReadyData {
     pub session_type: String,
     pub session_id: String,
     pub resume_gateway_url: String,
-    pub guilds: Vec<Guild>,
+    pub guilds: Vec<PartialGuild>,
     pub geo_ordered_rtc_regions: Vec<String>,
     pub application: ApplicationData,
 }

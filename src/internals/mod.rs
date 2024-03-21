@@ -31,8 +31,9 @@ pub enum Value {
 pub enum HandlerValue {
     ReadyData(ReadyData),
     MessageData(Message),
-    DeletedMessageData(DeletedMessageData),
-    ReactionData(Reaction),
+    DeletedMessage(DeletedMessage),
+    ReactionData(ReactionData),
+    GuildCreateData(GuildCreateData),
 }
 
 pub type HandlerFn =

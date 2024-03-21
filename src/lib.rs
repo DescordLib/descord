@@ -22,7 +22,7 @@ pub mod prelude {
         color::*,
         intents::GatewayIntent,
         models::{
-            embed::*, embed_builder::EmbedBuilder, guild::Guild, message_edit::MessageEditData,
+            channel::*, embed::*, embed_builder::*, guild::*, message_edit::MessageEditData,
             message_response::CreateMessageData, message_response::Message,
             channel::*,
             reaction_response::Reaction, ready_response::*, user::User,

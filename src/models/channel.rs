@@ -5,14 +5,14 @@ use super::message_response::{CreateMessageData, Message};
 
 #[derive(DeJson, SerJson, Debug, Clone)]
 pub struct Channel {
-    pub last_message_id: String,
+    pub last_message_id: Option<String>,
     pub flags: usize,
-    pub guild_id: String,
-    pub parent_id: String,
+    pub guild_id: Option<String>,
+    pub parent_id: Option<String>,
     pub topic: Option<String>,
-    pub rate_limit_per_user: usize,
+    pub rate_limit_per_user: Option<usize>,
     pub position: u32,
-    pub nsfw: bool,
+    pub nsfw: Option<bool>,
     pub name: String,
     pub id: String,
 
