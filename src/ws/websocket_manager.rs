@@ -1,4 +1,4 @@
-use guild::{GuildCreateData, GuildCreateResponse};
+use guild::{GuildCreate, GuildCreateResponse};
 use log::*;
 use nanoserde::DeJson;
 
@@ -145,12 +145,12 @@ impl WsManager {
                     }
                 }
 
-                HandlerValue::MessageData(message_data.data)
+                HandlerValue::Message(message_data.data)
             }
 
             Event::MessageUpdate => {
                 let message_data = MessageResponse::deserialize_json(&payload.raw_json)?;
-                HandlerValue::MessageData(message_data.data)
+                HandlerValue::Message(message_data.data)
             }
 
             Event::MessageDelete => {
@@ -160,12 +160,12 @@ impl WsManager {
 
             Event::MessageReactionAdd => {
                 let data = ReactionResponse::deserialize_json(&payload.raw_json)?;
-                HandlerValue::ReactionData(data.data)
+                HandlerValue::Reaction(data.data)
             }
 
             Event::GuildCreate => {
                 let data = GuildCreateResponse::deserialize_json(&payload.raw_json)?;
-                HandlerValue::GuildCreateData(data.data)
+                HandlerValue::GuildCreate(data.data)
             }
 
             _ => {

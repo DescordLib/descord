@@ -48,11 +48,11 @@ pub struct Guild {
 #[derive(DeJson, SerJson)]
 pub struct GuildCreateResponse {
     #[nserde(rename = "d")]
-    pub data: GuildCreateData,
+    pub data: GuildCreate,
 }
 
 #[derive(DeJson, SerJson, Debug, Clone)]
-pub struct GuildCreateData {
+pub struct GuildCreate {
     pub id: String,
     pub name: String,
     #[nserde(rename = "icon")]
