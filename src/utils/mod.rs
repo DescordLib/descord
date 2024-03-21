@@ -1,9 +1,13 @@
+use crate::cache::MESSAGE_CACHE;
+use crate::client::TOKEN;
 use crate::consts::API;
+
 use crate::models::channel::Channel;
 use crate::models::dm_channel::DirectMessageChannel;
+use crate::models::message_edit::MessageEditData;
 use crate::models::message_response::CreateMessageData;
-use crate::prelude::{Message, User};
-use crate::{client::TOKEN, models::message_edit::MessageEditData};
+use crate::prelude::Message;
+use crate::prelude::User;
 
 use futures_util::TryFutureExt;
 use json::object;
@@ -157,6 +161,10 @@ pub async fn react(channel_id: &str, message_id: &str, emoji: &str) {
 }
 
 pub async fn get_message(channel_id: &str, message_id: &str) -> Message {
+    if let Some(message) = MESSAGE_CACHE.lock().await.get(message_id).cloned() {
+        return message;
+    }
+
     let url = format!("{API}/channels/{channel_id}/messages/{message_id}");
 
     let resp = Client::new()

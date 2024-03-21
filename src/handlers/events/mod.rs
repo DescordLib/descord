@@ -69,6 +69,9 @@ pub enum Event {
     VoiceStateUpdate,
     VoiceServerUpdate,
     WebhooksUpdate,
+
+    // Custom
+    MessageDeleteRaw,
 }
 
 impl FromStr for Event {

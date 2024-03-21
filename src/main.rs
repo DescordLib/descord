@@ -30,6 +30,16 @@ async fn main() {
 }
 
 #[event_handler]
+async fn message_delete_raw(_: DeletedMessage) {
+    println!("message deleted");
+}
+
+#[event_handler]
+async fn message_delete(data: Message) {
+    println!("cached message deleted: {}", data.content);
+}
+
+#[event_handler]
 async fn guild_create(data: GuildCreate) {
     println!("Guild: {}", data.name);
 }

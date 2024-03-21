@@ -16,6 +16,8 @@ pub use handlers::events::Event;
 pub use ws::payload::Payload;
 pub mod internals;
 
+pub(crate) mod cache;
+
 pub mod prelude {
     pub use super::*;
     pub use super::{

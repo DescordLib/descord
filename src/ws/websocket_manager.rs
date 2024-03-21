@@ -4,8 +4,8 @@ use nanoserde::DeJson;
 
 use crate::internals::*;
 
-use crate::models::*;
 use crate::models::ready_response::ReadyResponse;
+use crate::models::*;
 use deleted_message_response::DeletedMessageResponse;
 use message_response::MessageResponse;
 use reaction_response::ReactionResponse;
@@ -34,6 +34,8 @@ use crate::consts::{self, payloads};
 use crate::handlers::events::Event;
 use crate::ws::payload::Payload;
 use crate::Client;
+
+use crate::cache::MESSAGE_CACHE;
 
 type SocketWrite = Arc<Mutex<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>>;
 type SocketRead = Arc<Mutex<SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>>>;
@@ -127,15 +129,20 @@ impl WsManager {
         event_handlers: Arc<HashMap<Event, EventHandler>>,
         commands: Arc<HashMap<String, Command>>,
     ) -> Result<(), nanoserde::DeJsonErr> {
-        let event = Event::from_str(payload.type_name.as_ref().unwrap().as_str()).unwrap();
+        let mut event = Event::from_str(payload.type_name.as_ref().unwrap().as_str()).unwrap();
         let data = match event {
             Event::Ready => {
                 let data = ReadyResponse::deserialize_json(&payload.raw_json)?;
-                HandlerValue::ReadyData(data.data)
+                data.data.into()
             }
 
             Event::MessageCreate => {
                 let message_data = MessageResponse::deserialize_json(&payload.raw_json)?;
+
+                MESSAGE_CACHE
+                    .lock()
+                    .await
+                    .put(message_data.data.id.clone(), message_data.data.clone());
 
                 if let Some(command_name) = message_data.data.content.split(' ').next() {
                     if let Some(handler_fn) = commands.get(command_name) {
@@ -146,27 +153,39 @@ impl WsManager {
                     }
                 }
 
-                HandlerValue::Message(message_data.data)
+                message_data.data.into()
             }
 
             Event::MessageUpdate => {
                 let message_data = MessageResponse::deserialize_json(&payload.raw_json)?;
-                HandlerValue::Message(message_data.data)
+                message_data.data.into()
             }
 
             Event::MessageDelete => {
-                let delete_data = DeletedMessageResponse::deserialize_json(&payload.raw_json)?;
-                HandlerValue::DeletedMessage(delete_data.data)
+                let data = DeletedMessageResponse::deserialize_json(&payload.raw_json)?;
+
+                if let Some(cached_data) = MESSAGE_CACHE.lock().await.pop(&data.data.message_id) {
+                    if let Some(handler) = event_handlers.get(&Event::MessageDeleteRaw).cloned() {
+                        tokio::spawn(async move {
+                            handler.call(data.data.into()).await;
+                        });
+                    }
+
+                    cached_data.into()
+                } else {
+                    event = Event::MessageDeleteRaw;
+                    data.data.into()
+                }
             }
 
             Event::MessageReactionAdd => {
                 let data = ReactionResponse::deserialize_json(&payload.raw_json)?;
-                HandlerValue::Reaction(data.data)
+                data.data.into()
             }
 
             Event::GuildCreate => {
                 let data = GuildCreateResponse::deserialize_json(&payload.raw_json)?;
-                HandlerValue::GuildCreate(data.data)
+                data.data.into()
             }
 
             _ => {
