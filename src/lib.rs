@@ -23,6 +23,7 @@ pub mod prelude {
     pub use super::{
         color::*,
         intents::GatewayIntent,
+        consts::ImageFormat,
         models::{
             channel::*, embed::*, embed_builder::*, guild::*, message_edit::MessageEditData,
             message_response::CreateMessageData, message_response::Message,

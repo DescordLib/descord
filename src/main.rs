@@ -51,7 +51,9 @@ async fn dm(msg: Message) {
 
 #[descord::event_handler]
 pub async fn message_create(message: Message) {
-    if !message.content.starts_with("!!oogway") { return; }
+    if !message.content.starts_with("!!oogway") {
+        return;
+    }
 
     let (_, text) = message.content.split_once(" ").unwrap();
     let encoded_text = text.replace(" ", "%20");
@@ -64,7 +66,6 @@ pub async fn message_create(message: Message) {
             width: None,
         })
         .build();
-
 
     message
         .reply(CreateMessageData {
@@ -108,6 +109,18 @@ async fn user(msg: Message, user: User) {
         user.id,
         user.mention()
     ))
+    .await;
+}
+
+#[command]
+async fn av(msg: Message) {
+    msg.reply(
+        msg.author
+            .as_ref()
+            .unwrap()
+            .get_avatar_url(ImageFormat::Png)
+            .unwrap(),
+    )
     .await;
 }
 

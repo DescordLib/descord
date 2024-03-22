@@ -1,6 +1,6 @@
 use nanoserde::{DeJson, SerJson};
 
-use crate::utils;
+use crate::{utils, consts::ImageFormat};
 
 use super::message_response::CreateMessageData;
 
@@ -22,12 +22,12 @@ pub struct Author {
 }
 
 impl Author {
-    pub fn get_avatar_url(&self) -> Option<String> {
+    pub fn get_avatar_url(&self, image_format: ImageFormat) -> Option<String> {
         let user_id = &self.user_id;
         let avatar_hash = self.avatar_hash.as_ref()?;
 
         Some(format!(
-            "https://cdn.discordapp.com/avatars/{user_id}/{avatar_hash}.webp"
+            "https://cdn.discordapp.com/avatars/{user_id}/{avatar_hash}{image_format}"
         ))
     }
 
