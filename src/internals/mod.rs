@@ -92,17 +92,8 @@ impl Command {
     pub async fn call(&self, data: Message) {
         let re = regex::Regex::new(r#"([^"\s']+)|"([^"]*)"|'([^']*)'"#).unwrap();
         let split: Vec<String> = re.captures_iter(&data.content)
-            .filter_map(|cap| {
-                if let Some(m) = cap.get(1) {
-                    Some(m.as_str().to_string())
-                } else if let Some(m) = cap.get(2) {
-                    Some(m.as_str().to_string())
-                } else if let Some(m) = cap.get(3) {
-                    Some(m.as_str().to_string())
-                } else {
-                    None
-                }
-            })
+            .filter_map(|cap| cap.get(1).or(cap.get(2)).or(cap.get(3)))
+            .map(|m| m.as_str().to_string())
             .collect();
 
         // -1 because of the command name
