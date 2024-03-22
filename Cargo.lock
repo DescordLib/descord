@@ -265,6 +265,7 @@ dependencies = [
  "log",
  "lru",
  "nanoserde",
+ "regex",
  "reqwest",
  "tokio",
  "tokio-tungstenite",

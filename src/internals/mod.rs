@@ -90,7 +90,20 @@ pub struct Command {
 
 impl Command {
     pub async fn call(&self, data: Message) {
-        let split = data.content.split_whitespace().collect::<Vec<_>>();
+        let re = regex::Regex::new(r#"([^"\s']+)|"([^"]*)"|'([^']*)'"#).unwrap();
+        let split: Vec<String> = re.captures_iter(&data.content)
+            .filter_map(|cap| {
+                if let Some(m) = cap.get(1) {
+                    Some(m.as_str().to_string())
+                } else if let Some(m) = cap.get(2) {
+                    Some(m.as_str().to_string())
+                } else if let Some(m) = cap.get(3) {
+                    Some(m.as_str().to_string())
+                } else {
+                    None
+                }
+            })
+            .collect();
 
         // -1 because of the command name
         assert!(
@@ -110,7 +123,7 @@ impl Command {
                 ParamType::Int => args.push(Value::Int(split[idx].parse::<isize>().unwrap())),
                 ParamType::Bool => args.push(Value::Bool(split[idx].parse::<bool>().unwrap())),
                 ParamType::Channel => {
-                    let channel_id_str = split[idx];
+                    let channel_id_str = &split[idx];
                     let channel_id =
                         if channel_id_str.starts_with("<#") && channel_id_str.ends_with(">") {
                             &channel_id_str[2..channel_id_str.len() - 1]
@@ -121,7 +134,7 @@ impl Command {
                 }
 
                 ParamType::User => {
-                    let user_id_str = split[idx];
+                    let user_id_str = &split[idx];
                     let user_id = if user_id_str.starts_with("<@") && user_id_str.ends_with(">") {
                         &user_id_str[2..user_id_str.len() - 1]
                     } else {

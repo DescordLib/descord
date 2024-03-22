@@ -45,7 +45,7 @@ async fn guild_create(data: GuildCreate) {
 }
 
 #[descord::command]
-async fn dm(msg: Message, message: Vec<String>) {
+async fn dm(msg: Message, message: Args) {
     msg.author.unwrap().send_dm(message.join(" ")).await;
 }
 
@@ -76,7 +76,7 @@ pub async fn message_create(message: Message) {
 }
 
 #[command]
-async fn say_hello(msg: Message, name: std::String) {
+async fn echo(msg: Message, name: std::String) {
     msg.reply(format!("Hello, {name}!")).await;
 }
 
@@ -88,12 +88,6 @@ async fn ping(msg: Message) {
 
     msg.edit(format!("Pong! :ping_pong:  `{}ms`", latency))
         .await;
-}
-
-#[command(name = "echo")]
-async fn echo(msg: Message) {
-    let msg = msg.reply("Echo!").await;
-    msg.delete_after(5000).await;
 }
 
 #[command(name = "channel")]
