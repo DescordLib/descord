@@ -216,7 +216,12 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
     let mut param_types = vec![];
     let mut stmts: Vec<proc_macro2::TokenStream> = vec![];
 
+    let mut stop = false;
     for (idx, param) in function_params.iter().skip(1).enumerate() {
+        if stop {
+            panic!("`Arg` should be the last parameter");
+        }
+
         let param = match param {
             syn::FnArg::Typed(x) => x,
             _ => panic!("`self` is not allowed"),
@@ -246,6 +251,10 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
             "bool" => (type_path!(Bool, name), type_name!(Bool)),
             "Channel" => (type_path!(Channel, name), type_name!(Channel)),
             "User" => (type_path!(User, name), type_name!(User)),
+            "Args" => {
+                stop = true; // will stop the loop from running again
+                (type_path!(Args, name), type_name!(Args))
+            }
 
             _ => panic!("Unsupported type"),
         };
@@ -277,7 +286,7 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
 
             internals::Command {
                 name: String::from(#new_name),
-                args: vec![#(#param_types),*],
+                fn_sig: vec![#(#param_types),*],
                 handler_fn: f,
                 custom_prefix: #custom_prefix,
             }

@@ -44,9 +44,9 @@ async fn guild_create(data: GuildCreate) {
     println!("Guild: {}", data.name);
 }
 
-#[descord::command(name = "dm")]
-async fn dm(msg: Message) {
-    msg.author.unwrap().send_dm("You've asked for it!").await;
+#[descord::command]
+async fn dm(msg: Message, message: Vec<String>) {
+    msg.author.unwrap().send_dm(message.join(" ")).await;
 }
 
 #[descord::event_handler]
