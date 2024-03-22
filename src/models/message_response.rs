@@ -108,3 +108,12 @@ impl From<&str> for CreateMessageData {
         }
     }
 }
+
+impl From<Vec<Embed>> for CreateMessageData {
+    fn from(value: Vec<Embed>) -> Self {
+        CreateMessageData {
+            embeds: value,
+            ..Default::default()
+        }
+    }
+}

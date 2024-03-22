@@ -1,8 +1,9 @@
 use nanoserde::{DeJson, SerJson};
 
-use crate::{utils, consts::ImageFormat};
+use crate::{consts::ImageFormat, utils};
 
 use super::message_response::CreateMessageData;
+use crate::consts::*;
 
 #[derive(DeJson, SerJson, Clone, Debug)]
 pub struct Author {
@@ -22,12 +23,22 @@ pub struct Author {
 }
 
 impl Author {
-    pub fn get_avatar_url(&self, image_format: ImageFormat) -> Option<String> {
+    pub fn get_avatar_url(&self, image_format: ImageFormat, size: Option<u32>) -> Option<String> {
+        let size = if let Some(size) = size {
+            if !size.is_power_of_two() {
+                log::error!("size must be powers of 2");
+            }
+
+            format!("?size={size}")
+        } else {
+            "".to_string()
+        };
+
         let user_id = &self.user_id;
         let avatar_hash = self.avatar_hash.as_ref()?;
 
         Some(format!(
-            "https://cdn.discordapp.com/avatars/{user_id}/{avatar_hash}{image_format}"
+            "{DISCORD_CDN}/avatars/{user_id}/{avatar_hash}{image_format}{size}"
         ))
     }
 

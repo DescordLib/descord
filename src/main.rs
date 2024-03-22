@@ -114,13 +114,19 @@ async fn user(msg: Message, user: User) {
 
 #[command]
 async fn av(msg: Message) {
-    msg.reply(
+    msg.reply(format!(
+        "{}\n{}",
         msg.author
             .as_ref()
             .unwrap()
-            .get_avatar_url(ImageFormat::Png)
+            .get_avatar_url(ImageFormat::Png, Some(16))
             .unwrap(),
-    )
+        msg.author
+            .as_ref()
+            .unwrap()
+            .get_avatar_url(ImageFormat::Png, Some(4096))
+            .unwrap(),
+    ))
     .await;
 }
 

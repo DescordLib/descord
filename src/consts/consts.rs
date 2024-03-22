@@ -1,6 +1,7 @@
 pub const GATEWAY_URL: &str = "wss://gateway.discord.gg/?v=10&encoding=json";
 pub const API: &str = "https://discord.com/api/v10";
 pub const MESSAGE_CACHE_SIZE: usize = 100_000;
+pub const DISCORD_CDN: &str = "https://cdn.discordapp.com";
 
 #[derive(Debug, Clone, Copy)]
 pub enum ImageFormat {

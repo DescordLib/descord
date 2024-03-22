@@ -1,6 +1,8 @@
 use nanoserde::{DeJson, SerJson};
 
-use crate::{utils, consts::ImageFormat};
+use crate::{consts::ImageFormat, utils};
+
+use crate::consts::*;
 
 #[derive(DeJson, SerJson, Debug, Clone)]
 pub struct User {
@@ -12,27 +14,35 @@ pub struct User {
     pub mfa_enabled: bool,
     #[nserde(default)]
     pub id: String,
-    #[nserde(default)]
     pub global_name: Option<String>,
     #[nserde(default)]
     pub flags: usize,
-    #[nserde(default)]
     pub email: Option<String>,
     #[nserde(default)]
     pub discriminator: String,
     #[nserde(default)]
     pub bot: bool,
-    #[nserde(default)]
-    pub avatar: Option<String>,
+    #[nserde(rename = "avatar")]
+    pub avatar_hash: Option<String>,
 }
 
 impl User {
-    pub fn get_avatar_url(&self, image_format: ImageFormat) -> Option<String> {
+    pub fn get_avatar_url(&self, image_format: ImageFormat, size: Option<u32>) -> Option<String> {
+        let size = if let Some(size) = size {
+            if !size.is_power_of_two() {
+                log::error!("size must be powers of 2");
+            }
+
+            format!("?size={size}")
+        } else {
+            "".to_string()
+        };
+
         let user_id = &self.id;
-        let avatar_hash = self.avatar.as_ref()?;
+        let avatar_hash = self.avatar_hash.as_ref()?;
 
         Some(format!(
-            "https://cdn.discordapp.com/avatars/{user_id}/{avatar_hash}{image_format}"
+            "{DISCORD_CDN}/avatars/{user_id}/{avatar_hash}{image_format}{size}"
         ))
     }
 
@@ -40,4 +50,3 @@ impl User {
         format!("<@{0}>", self.id)
     }
 }
-
