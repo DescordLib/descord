@@ -204,7 +204,8 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
             }
 
             match *param.pat {
-                syn::Pat::Ident(ref ident) => ident,
+                syn::Pat::Ident(ref ident) => quote! { #ident },
+                syn::Pat::Wild(ref ident) => quote! { #ident },
                 _ => panic!("unknown param name"),
             }
         }
