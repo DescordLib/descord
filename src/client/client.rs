@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
+use reqwest::Method;
 
 use json::object;
 use nanoserde::SerJson;
@@ -9,6 +10,7 @@ use crate::internals::{EventHandler, *};
 use crate::prelude::{CreateMessageData, Message};
 use crate::ws::WsManager;
 use crate::{consts, Event};
+use crate::utils::send_request;
 
 lazy_static::lazy_static! {
     pub(crate) static ref TOKEN: Mutex<Option<String>> = Mutex::new(None);
@@ -77,5 +79,22 @@ impl Client {
 
             self.commands.insert(command.name.clone(), command.clone());
         });
+    }
+
+    pub async fn register_slash_commands(&mut self, commands: Vec<SlashCommand>) {
+        let response = send_request(Method::GET, "users/@me", None).await;
+        let bot_id = json::parse(response.unwrap().text().await.unwrap().as_str())
+            .unwrap()["id"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        for command in commands {
+            let response = send_request(Method::POST, format!("applications/{}/commands", bot_id).as_str(), Some(json::object! {
+                "name" => command.name.clone(),
+                "description" => command.description,
+                // "options" => command.options,
+            })).await;
+            println!("Registered slash command: {}", command.name);
+        }
     }
 }

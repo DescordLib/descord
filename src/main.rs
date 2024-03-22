@@ -25,8 +25,14 @@ async fn main() {
 
     register_all_commands!(client => []);
     register_all_events!(client => []);
+    register_all_slash_commands!(client => []);
 
     client.login().await;
+}
+
+#[slash(name = "ping", description = "Replies with a cool pong!")]
+async fn ping(interaction: Interaction) {
+    interaction.reply("Pong!").await;
 }
 
 #[descord::event_handler]
@@ -39,10 +45,10 @@ async fn message_delete(data: Message) {
     println!("cached message deleted: {}", data.content);
 }
 
-#[descord::event_handler]
-async fn guild_create(data: GuildCreate) {
-    println!("Guild: {}", data.name);
-}
+// #[descord::event_handler]
+// async fn guild_create(data: GuildCreate) {
+//     println!("Guild: {}", data.name);
+// }
 
 #[descord::command]
 async fn dm(msg: Message, message: Args) {
@@ -76,19 +82,19 @@ pub async fn message_create(message: Message) {
 }
 
 #[command]
-async fn echo(msg: Message, name: std::String) {
-    msg.reply(format!("Hello, {name}!")).await;
+async fn echo(msg: Message, stuff: Args) {
+    msg.reply(format!("Hello, {}", stuff.join(" "))).await;
 }
 
-#[command(name = "ping")]
-async fn ping(msg: Message) {
-    let clock = std::time::Instant::now();
-    let msg = msg.reply("Pong!").await;
-    let latency = clock.elapsed().as_millis();
-
-    msg.edit(format!("Pong! :ping_pong:  `{}ms`", latency))
-        .await;
-}
+// #[command(name = "ping")]
+// async fn ping(msg: Message) {
+//     let clock = std::time::Instant::now();
+//     let msg = msg.reply("Pong!").await;
+//     let latency = clock.elapsed().as_millis();
+//
+//     msg.edit(format!("Pong! :ping_pong:  `{}ms`", latency))
+//         .await;
+// }
 
 #[command(name = "channel")]
 async fn channel(msg: Message, channel: Channel) {

@@ -155,3 +155,19 @@ impl Command {
         boxed_fut.await;
     }
 }
+
+
+#[derive(Debug, Clone)]
+pub struct SlashCommand {
+    pub name: String,
+    pub description: String,
+    pub fn_sig: Vec<ParamType>,
+    pub handler_fn: HandlerFn,
+}
+
+impl SlashCommand {
+    pub async fn call(&self, data: Message) {
+        // TODO: Implement this
+
+    }
+}
