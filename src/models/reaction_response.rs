@@ -2,9 +2,7 @@ use nanoserde::{DeJson, SerJson};
 
 use crate::utils;
 
-use super::{
-    channel::Channel, emoji::Emoji, guild::GuildMember, message_response::Message, user::User,
-};
+use super::{channel::Channel, emoji::Emoji, guild::Member, message_response::Message, user::User};
 
 #[derive(DeJson, SerJson, Clone, Debug)]
 pub struct ReactionResponse {
@@ -17,7 +15,7 @@ pub struct Reaction {
     pub user_id: String,
     pub message_id: String,
     #[nserde(default)]
-    pub member: Option<GuildMember>,
+    pub member: Option<Member>,
     pub emoji: Emoji,
     pub channel_id: String,
     pub burst: bool,

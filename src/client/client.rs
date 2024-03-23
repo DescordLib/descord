@@ -21,6 +21,7 @@ pub struct Client {
     ws: WsManager,
     token: String,
     commands: HashMap<String, Command>,
+    slash_commands: HashMap<String, SlashCommand>,
     event_handlers: HashMap<Event, EventHandler>,
     prefix: String,
 }
@@ -38,6 +39,7 @@ impl Client {
             prefix: prefix.to_owned(),
 
             commands: HashMap::new(),
+            slash_commands: HashMap::new(),
             event_handlers: HashMap::new(),
         }
     }
@@ -48,6 +50,7 @@ impl Client {
                 self.intents,
                 self.event_handlers.into(),
                 self.commands.into(),
+                self.slash_commands.into(),
             )
             .await;
     }
@@ -83,22 +86,42 @@ impl Client {
 
     pub async fn register_slash_commands(&mut self, commands: Vec<SlashCommand>) {
         let response = send_request(Method::GET, "users/@me", None).await;
-        let bot_id = json::parse(response.unwrap().text().await.unwrap().as_str()).unwrap()["id"]
-            .as_str()
-            .unwrap()
-            .to_string();
+        let bot_id =
+            json::parse(response.unwrap().text().await.unwrap().as_str()).unwrap_or_else(|_| {
+                eprintln!("Failed to parse JSON response");
+                json::JsonValue::Null
+            })["id"]
+                .as_str()
+                .unwrap_or_else(|| {
+                    eprintln!("Failed to get 'id' from JSON response");
+                    ""
+                })
+                .to_string();
         for command in commands {
             let response = send_request(
                 Method::POST,
                 format!("applications/{}/commands", bot_id).as_str(),
                 Some(json::object! {
                     "name" => command.name.clone(),
-                    "description" => command.description,
+                    "description" => command.description.clone(),
                     // "options" => command.options,
                 }),
             )
             .await;
-            println!("Registered slash command: {}", command.name);
+            let command_id = json::parse(response.unwrap().text().await.unwrap().as_str())
+                .unwrap_or_else(|_| {
+                    eprintln!("Failed to parse JSON response");
+                    json::JsonValue::Null
+                })["id"]
+                .as_str()
+                .unwrap_or_else(|| {
+                    eprintln!("Failed to get 'id' from JSON response");
+                    ""
+                })
+                .to_string();
+
+            println!("Command ID: {}", command_id);
+            self.slash_commands.insert(command_id, command.clone());
         }
     }
 }

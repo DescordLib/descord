@@ -64,6 +64,7 @@ impl WsManager {
         intents: u32,
         event_handlers: Arc<HashMap<Event, EventHandler>>,
         commands: Arc<HashMap<String, Command>>,
+        slash_commands: Arc<HashMap<String, SlashCommand>>,
     ) -> Result<()> {
         if let Some(Ok(Message::Text(body))) = self.socket.1.lock().await.next().await {
             let Some(payload) = Payload::parse(&body) else {
@@ -108,9 +109,10 @@ impl WsManager {
 
                     let event_handlers = Arc::clone(&event_handlers);
                     let commands = Arc::clone(&commands);
+                    let slash_commands = Arc::clone(&slash_commands);
 
                     tokio::spawn(async move {
-                        Self::dispatch_event(payload, event_handlers, commands)
+                        Self::dispatch_event(payload, event_handlers, commands, slash_commands)
                             .await
                             .expect("Failed to parse json response");
                     });
@@ -129,6 +131,7 @@ impl WsManager {
         payload: Payload,
         event_handlers: Arc<HashMap<Event, EventHandler>>,
         commands: Arc<HashMap<String, Command>>,
+        slash_commands: Arc<HashMap<String, SlashCommand>>,
     ) -> Result<(), nanoserde::DeJsonErr> {
         let mut event = Event::from_str(payload.type_name.as_ref().unwrap().as_str()).unwrap();
         let data = match event {
@@ -190,8 +193,16 @@ impl WsManager {
             }
 
             Event::InteractionCreate => {
-                println!("{}", json::parse(&payload.raw_json).unwrap().pretty(4));
                 let data = InteractionResponsePayload::deserialize_json(&payload.raw_json).unwrap();
+
+                if let Some(deeper_data) = &data.data.data {
+                    if let Some(command) = slash_commands.get(&deeper_data.clone().id.unwrap()) {
+                        let handler = command.clone();
+                        handler.call(data.data).await;
+                        return Ok(());
+                    }
+                }
+
                 data.data.into()
             }
 

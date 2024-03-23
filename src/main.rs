@@ -25,7 +25,7 @@ async fn main() {
 
     register_all_commands!(client => []);
     register_all_events!(client => []);
-    // register_all_slash_commands!(client => []);
+    register_all_slash_commands!(client => []);
 
     client.login().await;
 }
@@ -199,12 +199,13 @@ async fn components(message: Message) {
 }
 
 #[event]
-async fn interaction_create(int: Interaction) {
-    int.message
-        .unwrap()
-        .send_in_channel(format!(
-            "custom id: {}",
-            int.data.unwrap().custom_id.unwrap()
-        ))
-        .await;
+async fn interaction_create(interaction: Interaction) {
+    // println!("interaction: {:?}", interaction);
+    // int.message
+    //     .unwrap()
+    //     .send_in_channel(format!(
+    //         "custom id: {}",
+    //         int.data.unwrap().custom_id.unwrap()
+    //     ))
+    //     .await;
 }

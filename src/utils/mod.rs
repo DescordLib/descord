@@ -197,7 +197,7 @@ pub async fn send_request(
     method: Method,
     endpoint: &str,
     data: Option<JsonValue>,
-) -> Result<reqwest::Response, reqwest::Error> {
+) -> Result<Response, reqwest::Error> {
     let client = Client::new();
     let url = format!("https://discord.com/api/v10/{}", endpoint);
 

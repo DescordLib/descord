@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::handlers::events::Event;
 use crate::models::channel::Channel;
 use crate::models::deleted_message_response::DeletedMessage;
-use crate::models::interaction::Interaction;
+use crate::models::interaction::{Interaction, InteractionData};
 use crate::models::reaction_response::Reaction;
 use crate::prelude::*;
 use crate::utils::*;
@@ -61,6 +61,12 @@ implemented_enum! {
 pub type HandlerFn =
     fn(
         Message,
+        Vec<Value>,
+    ) -> std::pin::Pin<Box<dyn futures_util::Future<Output = ()> + Send + 'static>>;
+
+pub type SlashHandlerFn =
+    fn(
+        Interaction,
         Vec<Value>,
     ) -> std::pin::Pin<Box<dyn futures_util::Future<Output = ()> + Send + 'static>>;
 
@@ -164,11 +170,63 @@ pub struct SlashCommand {
     pub name: String,
     pub description: String,
     pub fn_sig: Vec<ParamType>,
-    pub handler_fn: HandlerFn,
+    pub handler_fn: SlashHandlerFn,
 }
 
 impl SlashCommand {
-    pub async fn call(&self, data: Message) {
-        // TODO: Implement this
+    pub async fn call(&self, data: Interaction) {
+        let split: Vec<String> = data
+            .clone()
+            .data
+            .unwrap_or(InteractionData::default())
+            .options
+            .unwrap_or_default()
+            .iter()
+            .map(|i| i.value.clone())
+            .collect();
+        let mut args: Vec<Value> = Vec::with_capacity(self.fn_sig.len());
+
+        let mut idx = 0;
+        while idx < self.fn_sig.len() {
+            let ty = &self.fn_sig[idx];
+            match ty {
+                ParamType::String => args.push(Value::String((split[idx].to_owned()))),
+                ParamType::Int => args.push(Value::Int(split[idx].parse::<isize>().unwrap())),
+                ParamType::Bool => args.push(Value::Bool(split[idx].parse::<bool>().unwrap())),
+                ParamType::Channel => {
+                    let channel_id_str = &split[idx];
+                    let channel_id =
+                        if channel_id_str.starts_with("<#") && channel_id_str.ends_with(">") {
+                            &channel_id_str[2..channel_id_str.len() - 1]
+                        } else {
+                            channel_id_str
+                        };
+                    args.push(Value::Channel(get_channel(channel_id).await.unwrap()));
+                }
+
+                ParamType::User => {
+                    let user_id_str = &split[idx];
+                    let user_id = if user_id_str.starts_with("<@") && user_id_str.ends_with(">") {
+                        &user_id_str[2..user_id_str.len() - 1]
+                    } else {
+                        user_id_str
+                    };
+                    args.push(Value::User(get_user(user_id).await.unwrap()));
+                }
+                _ => {}
+            }
+
+            idx += 1;
+        }
+
+        // if no extra args, send an empty vector
+        if args.len() != self.fn_sig.len() && self.fn_sig.last() == Some(&ParamType::Args) {
+            args.push(Value::Args(vec![]));
+        }
+
+        let fut = ((self.handler_fn)(data, args));
+        let boxed_fut: std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'static>> =
+            Box::pin(fut);
+        boxed_fut.await;
     }
 }

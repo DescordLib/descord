@@ -419,7 +419,7 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
             use descord::prelude::*;
 
             fn f(
-                #first_param_name: Message,
+                #first_param_name: descord::models::interaction::Interaction,
                 args: Vec<internals::Value>
             ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'static>> {
                 Box::pin(async move {

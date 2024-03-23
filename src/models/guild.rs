@@ -97,7 +97,7 @@ pub struct GuildCreate {
     pub large: bool,
     pub unavailable: Option<bool>,
     pub member_count: usize,
-    pub members: Vec<GuildMember>,
+    pub members: Vec<Member>,
     pub channels: Vec<Channel>,
     pub threads: Vec<Channel>,
 }
@@ -110,7 +110,7 @@ pub struct PartialGuild {
 }
 
 #[derive(DeJson, SerJson, Debug, Clone)]
-pub struct GuildMember {
+pub struct Member {
     pub roles: Vec<String>,
     pub mute: bool,
     pub joined_at: String,

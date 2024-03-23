@@ -1,10 +1,13 @@
+use json::JsonValue;
 use std::collections::HashMap;
 
 use crate::consts::*;
 use crate::models::allowed_mentions::AllowedMentions;
-use crate::models::guild::GuildMember;
+use crate::models::guild::Member;
 use crate::prelude::{Component, Embed};
+use crate::utils::send_request;
 use nanoserde::{DeJson, SerJson};
+use reqwest::Method;
 
 use super::{channel::Channel, message_response::Message, user::User};
 
@@ -23,7 +26,7 @@ pub struct Interaction {
     pub data: Option<InteractionData>,
     pub channel: Option<Channel>,
     pub channel_id: Option<String>,
-    pub member: Option<GuildMember>,
+    pub member: Option<Member>,
     pub user: Option<User>,
     pub token: String,
     pub message: Option<Message>,
@@ -33,7 +36,26 @@ pub struct Interaction {
     pub context: Option<u32>,
 }
 
-#[derive(DeJson, SerJson, Clone, Debug)]
+impl Interaction {
+    pub async fn reply(&self, response: &str) -> Result<reqwest::Response, reqwest::Error> {
+        let response = InteractionResponse {
+            type_: 4,
+            data: Some(InteractionResponseData {
+                content: Some(response.to_string()),
+                ..Default::default()
+            }),
+        };
+        let json_response = SerJson::serialize_json(&response);
+        send_request(
+            Method::POST,
+            format!("interactions/{}/{}/callback", self.id, self.token).as_str(),
+            Some(JsonValue::from(json_response)),
+        )
+        .await
+    }
+}
+
+#[derive(DeJson, SerJson, Clone, Debug, Default)]
 pub struct InteractionData {
     pub custom_id: Option<String>,
     pub component_type: Option<u32>,
@@ -52,7 +74,7 @@ pub struct InteractionData {
 #[derive(DeJson, SerJson, Clone, Debug)]
 pub struct ResolvedData {
     pub users: Option<HashMap<String, User>>,
-    pub members: Option<HashMap<String, GuildMember>>,
+    pub members: Option<HashMap<String, Member>>,
     pub channels: Option<HashMap<String, Channel>>,
     pub messages: Option<HashMap<String, Message>>,
     // TODO: roles, attachments
@@ -76,7 +98,7 @@ pub struct InteractionResponse {
     pub data: Option<InteractionResponseData>,
 }
 
-#[derive(DeJson, SerJson, Clone, Debug)]
+#[derive(DeJson, SerJson, Clone, Debug, Default)]
 pub struct InteractionResponseData {
     pub tts: Option<bool>,
     pub content: Option<String>,
