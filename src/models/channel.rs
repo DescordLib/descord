@@ -17,7 +17,7 @@ pub struct Channel {
     pub id: String,
 
     #[nserde(rename = "type")]
-    pub channel_type: usize,
+    pub channel_type: u32,
 }
 
 impl Channel {

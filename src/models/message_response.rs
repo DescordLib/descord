@@ -5,6 +5,7 @@ use crate::utils;
 use crate::{consts, Client};
 
 use super::channel::Channel;
+use super::components::Component;
 use super::message_edit::MessageEditData;
 use super::{author::Author, embed::Embed, message_reference::MessageReference};
 
@@ -40,7 +41,6 @@ pub struct Message {
     #[nserde(default)]
     pub embeds: Vec<Embed>,
     pub author: Option<Author>,
-
     #[nserde(default)]
     pub referenced_message: Option<MessageReference>,
 
@@ -86,9 +86,33 @@ impl Message {
 pub struct CreateMessageData {
     pub content: String,
     pub tts: bool,
-
-    // TODO: add max check
     pub embeds: Vec<Embed>,
+
+    /// Column<Row<Component>>
+    pub components: Vec<Vec<Component>>,
+}
+
+impl CreateMessageData {
+    pub fn to_json(&self) -> String {
+        let mut json = json::parse(&self.serialize_json()).unwrap();
+
+        let components = self
+            .components
+            .iter()
+            .map(|column| {
+                let components = json::parse(&column.serialize_json()).unwrap();
+                json::object! {
+                    type: 1,
+                    components: components,
+                }
+            })
+            .collect::<Vec<_>>();
+
+        json.remove("components");
+        json.insert("components", components);
+
+        json::stringify(json)
+    }
 }
 
 impl From<String> for CreateMessageData {
@@ -111,6 +135,11 @@ impl From<&str> for CreateMessageData {
 
 impl From<Vec<Embed>> for CreateMessageData {
     fn from(value: Vec<Embed>) -> Self {
+        assert!(
+            value.len() <= 10,
+            "A message can only contain up to 10 rich embeds"
+        );
+
         CreateMessageData {
             embeds: value,
             ..Default::default()

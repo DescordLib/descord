@@ -96,13 +96,13 @@ impl WsManager {
             match payload.operation_code {
                 OpCode::Dispatch => {
                     info!(
-                        "received {} event\npayload:{}",
+                        "received {} event",
                         payload
                             .type_name
                             .as_ref()
                             .map(|i| i.as_str())
                             .unwrap_or("Unknown"),
-                        json::parse(&payload.raw_json).unwrap().pretty(4)
+                        // json::parse(&payload.raw_json).unwrap().pretty(4)
                     );
 
                     let event_handlers = Arc::clone(&event_handlers);

@@ -18,8 +18,8 @@ use reqwest::{header::HeaderMap, Response, StatusCode};
 // TODO: Error checking in each function
 
 pub async fn send(channel_id: &str, data: impl Into<CreateMessageData>) -> Message {
-    let data = data.into();
-    let body = data.serialize_json();
+    let data: CreateMessageData = data.into();
+    let body = data.to_json();
 
     let url = format!("{API}/channels/{channel_id}/messages");
 
@@ -43,8 +43,7 @@ pub async fn reply(
     data: impl Into<CreateMessageData>,
 ) -> Message {
     let data: CreateMessageData = data.into();
-
-    let mut body = json::parse(&data.serialize_json()).unwrap();
+    let mut body = json::parse(&data.to_json()).unwrap();
     body.insert(
         "message_reference",
         object! {

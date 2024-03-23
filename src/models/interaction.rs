@@ -1,12 +1,13 @@
 use nanoserde::{DeJson, SerJson};
 use crate::consts::*;
-use crate::models::member::Member;
+use crate::models::guild::GuildMember;
 
 #[derive( SerJson, Clone, Debug)]
 pub struct Interaction {
-    pub r#type: i32,
+    #[nserde(rename = "type")]
+    pub type_: i32,
     pub token: String,
-    pub member: Member,
+    pub member: GuildMember,
     pub id: String,
     pub guild_id: String,
     pub app_permissions: String,

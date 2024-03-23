@@ -22,12 +22,14 @@ pub mod prelude {
     pub use super::*;
     pub use super::{
         color::*,
-        intents::GatewayIntent,
         consts::ImageFormat,
+        consts::ButtonStyle,
+        consts::ComponentType,
+        intents::GatewayIntent,
         models::{
-            channel::*, embed::*, embed_builder::*, guild::*, message_edit::MessageEditData,
+            channel::*, channel::*, component_builder::*, components::*, embed::*,
+            embed_builder::*, guild::*, message_edit::MessageEditData,
             message_response::CreateMessageData, message_response::Message,
-            channel::*,
             reaction_response::Reaction, ready_response::*, user::User,
         },
         Payload,

@@ -178,3 +178,41 @@ async fn reaction_add(reaction: Reaction) {
         );
     }
 }
+
+#[command]
+async fn button(message: Message) {
+    let b1 : Component = ComponentBuilder::button(ButtonObject {
+        style: ButtonStyle::Primary as _,
+        label: Some("Click me".to_string()),
+        custom_id: Some("btn1".to_string()),
+        ..Default::default()
+    })
+    .unwrap();
+
+    let b2: Component = ComponentBuilder::button(ButtonObject {
+        style: ButtonStyle::Secondary as _,
+        label: Some("Click me".to_string()),
+        custom_id: Some("btn2".to_string()),
+        ..Default::default()
+    })
+    .unwrap();
+
+    let b3: Component = ComponentBuilder::button(ButtonObject {
+        style: ButtonStyle::Danger as _,
+        label: Some("Click me".to_string()),
+        custom_id: Some("btn3".to_string()),
+        disabled: true,
+        ..Default::default()
+    })
+    .unwrap();
+
+    message
+        .reply(CreateMessageData {
+            components: vec![
+                vec![b1],
+                vec![b2, b3],
+            ],
+            ..Default::default()
+        })
+        .await;
+}
