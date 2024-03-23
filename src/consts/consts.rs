@@ -108,3 +108,21 @@ pub enum SelectMenuType {
     MentionableSelect,
     ChannelSelect,
 }
+
+#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InteractionType {
+    Ping = 1,
+    ApplicationCommand,
+    MessageComponent,
+    ApplicationCommandAutocomplete,
+    ModalSubmit,
+}
+
+#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InteractionContextType {
+    Guild,
+    BotDm,
+    PrivateChanne,
+}
