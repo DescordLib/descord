@@ -610,7 +610,7 @@ pub fn register_all_events(input: TokenStream) -> TokenStream {
                     attr.path()
                         .segments
                         .last()
-                        .map_or(false, |seg| seg.ident == "event_handler")
+                        .map_or(false, |seg| seg.ident == "event")
                 }) {
                     events.push(function.sig.ident.clone());
                 }
