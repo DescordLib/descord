@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use crate::handlers::events::Event;
 use crate::models::channel::Channel;
 use crate::models::deleted_message_response::DeletedMessage;
-use crate::models::reaction_response::Reaction;
 use crate::models::interaction::Interaction;
+use crate::models::reaction_response::Reaction;
 use crate::prelude::*;
 use crate::utils::*;
 use futures_util::FutureExt;
@@ -93,7 +93,8 @@ pub struct Command {
 impl Command {
     pub async fn call(&self, data: Message) {
         let re = regex::Regex::new(r#"([^"\s']+)|"([^"]*)"|'([^']*)'"#).unwrap();
-        let split: Vec<String> = re.captures_iter(&data.content)
+        let split: Vec<String> = re
+            .captures_iter(&data.content)
             .filter_map(|cap| cap.get(1).or(cap.get(2)).or(cap.get(3)))
             .map(|m| m.as_str().to_string())
             .collect();
@@ -158,7 +159,6 @@ impl Command {
     }
 }
 
-
 #[derive(Debug, Clone)]
 pub struct SlashCommand {
     pub name: String,
@@ -170,6 +170,5 @@ pub struct SlashCommand {
 impl SlashCommand {
     pub async fn call(&self, data: Message) {
         // TODO: Implement this
-
     }
 }

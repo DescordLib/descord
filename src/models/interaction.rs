@@ -1,13 +1,15 @@
 use std::collections::HashMap;
 
 use crate::consts::*;
+use crate::models::allowed_mentions::AllowedMentions;
 use crate::models::guild::GuildMember;
+use crate::prelude::{Component, Embed};
 use nanoserde::{DeJson, SerJson};
 
-use super::{channel::Channel, user::User, message_response::Message};
+use super::{channel::Channel, message_response::Message, user::User};
 
 #[derive(DeJson, SerJson, Clone, Debug)]
-pub struct InteractionResponse {
+pub struct InteractionResponsePayload {
     #[nserde(rename = "d")]
     pub data: Interaction,
 }
@@ -53,7 +55,6 @@ pub struct ResolvedData {
     pub members: Option<HashMap<String, GuildMember>>,
     pub channels: Option<HashMap<String, Channel>>,
     pub messages: Option<HashMap<String, Message>>,
-
     // TODO: roles, attachments
 }
 
@@ -66,4 +67,21 @@ pub struct AppCommandInteractionData {
     pub value: String,
     pub options: Option<Vec<AppCommandInteractionData>>,
     pub focused: Option<bool>,
+}
+
+#[derive(DeJson, SerJson, Clone, Debug)]
+pub struct InteractionResponse {
+    #[nserde(rename = "type")]
+    pub type_: u32,
+    pub data: Option<InteractionResponseData>,
+}
+
+#[derive(DeJson, SerJson, Clone, Debug)]
+pub struct InteractionResponseData {
+    pub tts: Option<bool>,
+    pub content: Option<String>,
+    pub embeds: Option<Vec<Embed>>,
+    pub allowed_mentions: Option<AllowedMentions>,
+    pub flags: Option<u32>,
+    pub components: Option<Vec<Component>>,
 }

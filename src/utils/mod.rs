@@ -10,10 +10,10 @@ use crate::prelude::Message;
 use crate::prelude::User;
 
 use futures_util::TryFutureExt;
-use json::{JsonValue, object};
+use json::{object, JsonValue};
 use nanoserde::{DeJson, SerJson};
-use reqwest::{Client, Method};
 use reqwest::{header::HeaderMap, Response, StatusCode};
+use reqwest::{Client, Method};
 
 // TODO: Error checking in each function
 
@@ -193,7 +193,11 @@ fn get_headers() -> HeaderMap {
     map
 }
 
-pub async fn send_request(method: Method, endpoint: &str, data: Option<JsonValue>) -> Result<reqwest::Response, reqwest::Error> {
+pub async fn send_request(
+    method: Method,
+    endpoint: &str,
+    data: Option<JsonValue>,
+) -> Result<reqwest::Response, reqwest::Error> {
     let client = Client::new();
     let url = format!("https://discord.com/api/v10/{}", endpoint);
 

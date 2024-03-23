@@ -22,9 +22,9 @@ pub mod prelude {
     pub use super::*;
     pub use super::{
         color::*,
-        consts::ImageFormat,
         consts::ButtonStyle,
         consts::ComponentType,
+        consts::ImageFormat,
         consts::SelectMenuType,
         intents::GatewayIntent,
         models::{

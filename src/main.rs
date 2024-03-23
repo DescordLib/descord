@@ -35,66 +35,30 @@ async fn ping(interaction: Interaction) {
     interaction.reply("Pong!").await;
 }
 
-#[descord::event_handler]
+#[event]
 async fn message_delete_raw(_: DeletedMessage) {
     println!("message deleted");
 }
 
-#[descord::event_handler]
+#[event]
 async fn message_delete(data: Message) {
     println!("cached message deleted: {}", data.content);
 }
 
-// #[descord::event_handler]
+// #[event]
 // async fn guild_create(data: GuildCreate) {
 //     println!("Guild: {}", data.name);
 // }
 
-#[descord::command]
+#[command]
 async fn dm(msg: Message, message: Args) {
     msg.author.unwrap().send_dm(message.join(" ")).await;
-}
-
-#[descord::event_handler]
-pub async fn message_create(message: Message) {
-    if !message.content.starts_with("!!oogway") {
-        return;
-    }
-
-    let (_, text) = message.content.split_once(" ").unwrap();
-    let encoded_text = text.replace(" ", "%20");
-    let embed = EmbedBuilder::new()
-        .color(Color::Teal)
-        .image(EmbedImage {
-            url: format!("https://api.popcat.xyz/oogway?text={}", encoded_text),
-            proxy_url: None,
-            height: None,
-            width: None,
-        })
-        .build();
-
-    message
-        .reply(CreateMessageData {
-            embeds: vec![embed],
-            ..Default::default()
-        })
-        .await;
 }
 
 #[command]
 async fn echo(msg: Message, stuff: Args) {
     msg.reply(format!("Hello, {}", stuff.join(" "))).await;
 }
-
-// #[command(name = "ping")]
-// async fn ping(msg: Message) {
-//     let clock = std::time::Instant::now();
-//     let msg = msg.reply("Pong!").await;
-//     let latency = clock.elapsed().as_millis();
-//
-//     msg.edit(format!("Pong! :ping_pong:  `{}ms`", latency))
-//         .await;
-// }
 
 #[command(name = "channel")]
 async fn channel(msg: Message, channel: Channel) {
@@ -144,7 +108,7 @@ async fn react(msg: Message, emoji: String) {
     msg.react(&emoji).await;
 }
 
-#[event_handler]
+#[event]
 async fn ready(data: ReadyData) {
     println!(
         "Logged in as: {}#{}",
@@ -154,7 +118,7 @@ async fn ready(data: ReadyData) {
     *BOT_ID.lock().await = data.user.id.into();
 }
 
-#[event_handler]
+#[event]
 async fn reaction_add(reaction: Reaction) {
     if &reaction.user_id == BOT_ID.lock().await.as_str() {
         return;
@@ -234,10 +198,13 @@ async fn components(message: Message) {
         .await;
 }
 
-#[event_handler]
+#[event]
 async fn interaction_create(int: Interaction) {
     int.message
         .unwrap()
-        .send_in_channel(format!("custom id: {}", int.data.unwrap().custom_id.unwrap()))
+        .send_in_channel(format!(
+            "custom id: {}",
+            int.data.unwrap().custom_id.unwrap()
+        ))
         .await;
 }

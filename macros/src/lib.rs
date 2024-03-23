@@ -87,7 +87,7 @@ struct CommandArgs {
 }
 
 #[proc_macro_attribute]
-pub fn event_handler(args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn event(args: TokenStream, input: TokenStream) -> TokenStream {
     let function = parse_macro_input!(input as ItemFn);
     let function_vis = function.vis;
     let function_name = &function.sig.ident;
@@ -107,7 +107,7 @@ pub fn event_handler(args: TokenStream, input: TokenStream) -> TokenStream {
     };
 
     if function.sig.asyncness.is_none() {
-        panic!("Function marked with `#[descord::event_handler(...)]` should be async");
+        panic!("Function marked with `#[descord::event(...)]` should be async");
     }
 
     let attr_args = match NestedMeta::parse_meta_list(args.into()) {
