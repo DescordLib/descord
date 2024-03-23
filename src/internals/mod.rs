@@ -4,6 +4,7 @@ use crate::handlers::events::Event;
 use crate::models::channel::Channel;
 use crate::models::deleted_message_response::DeletedMessage;
 use crate::models::reaction_response::Reaction;
+use crate::models::interaction::Interaction;
 use crate::prelude::*;
 use crate::utils::*;
 use futures_util::FutureExt;
@@ -53,6 +54,7 @@ implemented_enum! {
         DeletedMessage,
         Reaction,
         GuildCreate,
+        Interaction,
     }
 }
 

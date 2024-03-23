@@ -25,7 +25,7 @@ async fn main() {
 
     register_all_commands!(client => []);
     register_all_events!(client => []);
-    register_all_slash_commands!(client => []);
+    // register_all_slash_commands!(client => []);
 
     client.login().await;
 }
@@ -231,5 +231,13 @@ async fn components(message: Message) {
             components: vec![vec![b1], vec![b2, b3], vec![select]],
             ..Default::default()
         })
+        .await;
+}
+
+#[event_handler]
+async fn interaction_create(int: Interaction) {
+    int.message
+        .unwrap()
+        .send_in_channel(format!("custom id: {}", int.data.unwrap().custom_id.unwrap()))
         .await;
 }

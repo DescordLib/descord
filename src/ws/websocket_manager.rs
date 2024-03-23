@@ -4,6 +4,7 @@ use nanoserde::DeJson;
 
 use crate::internals::*;
 
+use crate::models::interaction::{Interaction, InteractionResponse};
 use crate::models::ready_response::ReadyResponse;
 use crate::models::*;
 use deleted_message_response::DeletedMessageResponse;
@@ -185,6 +186,12 @@ impl WsManager {
 
             Event::GuildCreate => {
                 let data = GuildCreateResponse::deserialize_json(&payload.raw_json).unwrap();
+                data.data.into()
+            }
+
+            Event::InteractionCreate => {
+                println!("{}", json::parse(&payload.raw_json).unwrap().pretty(4));
+                let data = InteractionResponse::deserialize_json(&payload.raw_json).unwrap();
                 data.data.into()
             }
 

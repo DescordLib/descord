@@ -75,6 +75,7 @@ event_handler_args![
     message_update     => MessageUpdate      : MessageData,
     reaction_add       => MessageReactionAdd : Reaction,
     guild_create       => GuildCreate        : GuildCreate,
+    interaction_create => InteractionCreate  : Interaction,
 ];
 
 #[derive(Debug, FromMeta)]

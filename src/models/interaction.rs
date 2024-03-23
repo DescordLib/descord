@@ -7,6 +7,12 @@ use nanoserde::{DeJson, SerJson};
 use super::{channel::Channel, user::User, message_response::Message};
 
 #[derive(DeJson, SerJson, Clone, Debug)]
+pub struct InteractionResponse {
+    #[nserde(rename = "d")]
+    pub data: Interaction,
+}
+
+#[derive(DeJson, SerJson, Clone, Debug)]
 pub struct Interaction {
     pub id: String,
     pub application_id: String,
@@ -27,11 +33,14 @@ pub struct Interaction {
 
 #[derive(DeJson, SerJson, Clone, Debug)]
 pub struct InteractionData {
-    pub id: String,
+    pub custom_id: Option<String>,
+    pub component_type: Option<u32>,
+
+    pub id: Option<String>,
     #[nserde(rename = "name")]
-    pub command_name: String,
+    pub command_name: Option<String>,
     #[nserde(rename = "type")]
-    pub type_: u32,
+    pub type_: Option<u32>,
     pub resolved: Option<ResolvedData>,
     pub options: Option<Vec<AppCommandInteractionData>>,
     pub guild_id: Option<String>,
