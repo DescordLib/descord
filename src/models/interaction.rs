@@ -78,6 +78,26 @@ impl Interaction {
         )
         .await;
     }
+
+    pub async fn edit_original<S: AsRef<str>>(&self, response: S) {
+        send_request(
+            Method::PATCH,
+            format!("webhooks/{}/{}/messages/@original", self.application_id, self.token).as_str(),
+            Some(json::object! {
+                content: response.as_ref(),
+            }),
+        )
+        .await;
+    }
+
+    pub async fn delete_original(&self) {
+        send_request(
+            Method::DELETE,
+            format!("webhooks/{}/{}/messages/@original", self.application_id, self.token).as_str(),
+            None,
+        )
+        .await;
+    }
 }
 
 #[derive(DeJson, SerJson, Clone, Debug, Default)]
