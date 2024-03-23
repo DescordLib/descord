@@ -13,5 +13,6 @@ pub mod message_response;
 pub mod reaction_response;
 pub mod ready_response;
 pub mod user;
+pub mod components;
 mod interaction;
 mod member;
