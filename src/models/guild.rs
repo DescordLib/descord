@@ -1,6 +1,6 @@
 use nanoserde::{DeJson, SerJson};
 
-use super::{user::User, channel::Channel};
+use super::{channel::Channel, user::User};
 
 #[derive(DeJson, SerJson, Debug, Clone)]
 pub struct Guild {
@@ -114,13 +114,13 @@ pub struct GuildMember {
     pub roles: Vec<String>,
     pub mute: bool,
     pub joined_at: String,
-
-    pub pending: Option<bool>,
+    pub deaf: bool,
+    pub is_pending: Option<bool>,
+    pub permissions: Option<String>,
     pub user: Option<User>,
-    #[nserde(default, rename = "avatar")]
+    #[nserde(rename = "avatar")]
     pub guild_avatar_hash: Option<String>,
-    #[nserde(default)]
-    pub flags: usize,
+    pub flags: Option<usize>,
     pub premium_since: Option<String>,
     pub nick: Option<String>,
 }
