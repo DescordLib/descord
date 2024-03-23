@@ -35,6 +35,13 @@ async fn ping(interaction: Interaction) {
     interaction.reply("Pong!").await;
 }
 
+#[slash(name = "greet", description = "Greets a person")]
+async fn hello(interaction: Interaction, person: User) {
+    interaction
+        .reply(format!("Hello, {}!", person.mention()).as_str())
+        .await;
+}
+
 #[event]
 async fn message_delete_raw(_: DeletedMessage) {
     println!("message deleted");

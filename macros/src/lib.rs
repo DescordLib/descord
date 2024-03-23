@@ -364,6 +364,7 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
     };
 
     let mut param_types = vec![];
+    let mut param_names = vec![];
     let mut stmts: Vec<proc_macro2::TokenStream> = vec![];
 
     let stop = false;
@@ -381,6 +382,7 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
             panic!();
         };
 
+        param_names.push(quote! { stringify!(#name).to_string() });
         let type_ = (*param.ty).clone();
 
         let syn::Type::Path(path) = type_ else {
@@ -434,6 +436,7 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
                 name: String::from(#new_name),
                 description: String::from(#description),
                 fn_sig: vec![#(#param_types),*],
+                fn_param_names: vec![#(#param_names),*],
                 handler_fn: f,
             }
         }
