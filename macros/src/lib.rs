@@ -401,7 +401,7 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
             })
             .next()
             .unwrap_or_else(|| String::from("No description provided"));
-        
+
         param_descriptions.push(description);
         let type_ = (*param.ty).clone();
 
@@ -644,6 +644,86 @@ pub fn register_all_events(input: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         #client_obj.register_events(vec![#(#events()),*]);
+    };
+
+    TokenStream::from(expanded)
+}
+
+/// Usage: `register_all!(client => ["src/file.rs", "src/file2.rs"]);`
+/// Where `client` is the client object and the array is the list of files to search for events, commands, and slash commands.
+/// If the array is empty, it will recursively search for files in the `src` directory.
+#[proc_macro]
+pub fn register_all(input: TokenStream) -> TokenStream {
+    let RegisterCmd {
+        client_obj,
+        file_array,
+    } = parse_macro_input!(input as RegisterCmd);
+
+    let paths: Vec<String> = if !file_array.elems.is_empty() {
+        file_array
+            .elems
+            .into_iter()
+            .map(|elem| {
+                if let syn::Expr::Lit(lit) = elem {
+                    if let syn::Lit::Str(lit_str) = lit.lit {
+                        return lit_str.value();
+                    }
+                }
+                panic!("Invalid expression provided");
+            })
+            .collect()
+    } else {
+        let mut paths = Vec::new();
+        for entry in walkdir::WalkDir::new("src") {
+            let entry = entry.unwrap();
+            if entry.file_type().is_file() {
+                paths.push(entry.path().to_string_lossy().into_owned());
+            }
+        }
+        paths
+    };
+
+    let mut events = Vec::new();
+    let mut commands = Vec::new();
+    let mut slash_commands = Vec::new();
+
+    for path in &paths {
+        let items = syn::parse_file(&std::fs::read_to_string(&path).unwrap())
+            .unwrap()
+            .items;
+
+        for item in items {
+            if let syn::Item::Fn(function) = item {
+                if function.attrs.iter().any(|attr| {
+                    attr.path()
+                        .segments
+                        .last()
+                        .map_or(false, |seg| seg.ident == "event")
+                }) {
+                    events.push(function.sig.ident.clone());
+                } else if function.attrs.iter().any(|attr| {
+                    attr.path()
+                        .segments
+                        .last()
+                        .map_or(false, |seg| seg.ident == "command")
+                }) {
+                    commands.push(function.sig.ident.clone());
+                } else if function.attrs.iter().any(|attr| {
+                    attr.path()
+                        .segments
+                        .last()
+                        .map_or(false, |seg| seg.ident == "slash")
+                }) {
+                    slash_commands.push(function.sig.ident.clone());
+                }
+            }
+        }
+    }
+
+    let expanded = quote! {
+        #client_obj.register_events(vec![#(#events()),*]);
+        #client_obj.register_commands(vec![#(#commands()),*]);
+        #client_obj.register_slash_commands(vec![#(#slash_commands()),*]).await;
     };
 
     TokenStream::from(expanded)

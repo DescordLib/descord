@@ -23,10 +23,7 @@ async fn main() {
     )
     .await;
 
-    register_all_commands!(client => []);
-    register_all_events!(client => []);
-    register_all_slash_commands!(client => []);
-
+    register_all!(client => []);
     client.login().await;
 }
 
