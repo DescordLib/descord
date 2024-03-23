@@ -30,18 +30,33 @@ async fn main() {
     client.login().await;
 }
 
-#[slash(name = "channel", description = "Get channel info")]
-async fn ping(interaction: Interaction, channel: Channel) {
+#[slash(name = "greet", description = "Get channel info")]
+async fn ping(
+    interaction: Interaction,
+    /// The channel to get info about
+    channel: Channel,
+    /// The user to ping
+    user: User,
+) {
     interaction
-        .reply(format!("Channel: {}", channel.name).as_str())
+        .reply(format!(
+            "Channel: {}\nUser: {}",
+            channel.name,
+            user.mention()
+        ))
         .await;
+
+    interaction.followup("This is a followup message").await;
 }
 
-#[slash(name = "greet", description = "Greets a person")]
-async fn hello(interaction: Interaction, person: User) {
-    interaction
-        .reply(format!("Hello, {}!", person.mention()).as_str())
-        .await;
+#[slash(name = "echo", description = "Echoes the input")]
+async fn echo_slash(
+    interaction: Interaction,
+    /// The message to echo
+    message: String,
+) {
+    interaction.defer().await;
+    interaction.followup(message).await;
 }
 
 #[event]

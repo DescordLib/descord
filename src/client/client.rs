@@ -129,10 +129,11 @@ impl Client {
                 .fn_param_names
                 .iter()
                 .zip(local_command.fn_sig.iter())
-                .map(|(name, type_)| {
+                .zip(local_command.fn_param_descriptions.iter())
+                .map(|((name, type_), description)| {
                     json::object! {
                         name: name.clone(),
-                        description: format!("{} parameter", name),
+                        description: description.clone(),
                         type: map_param_type_to_u8(type_),
                         required: true,
                     }
@@ -149,6 +150,10 @@ impl Client {
                     .clone()
                     .map(|opt| opt["name"].as_str().unwrap_or(""))
                     .collect();
+                let registered_descriptions: Vec<_> = registered_options
+                    .clone()
+                    .map(|opt| opt["description"].as_str().unwrap_or(""))
+                    .collect();
                 let registered_types: Vec<_> = registered_options
                     .map(|opt| opt["type"].as_u8().unwrap_or(0))
                     .collect();
@@ -156,6 +161,7 @@ impl Client {
                 if local_command.description
                     != registered_command["description"].as_str().unwrap_or("")
                     || local_command.fn_param_names != registered_names
+                    || local_command.fn_param_descriptions != registered_descriptions
                     || local_command
                         .fn_sig
                         .iter()

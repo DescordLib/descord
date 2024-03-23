@@ -37,11 +37,11 @@ pub struct Interaction {
 }
 
 impl Interaction {
-    pub async fn reply(&self, response: &str) -> Result<reqwest::Response, reqwest::Error> {
+    pub async fn reply<S: AsRef<str>>(&self, response: S) {
         let response = InteractionResponse {
             type_: 4,
             data: Some(InteractionResponseData {
-                content: Some(response.to_string()),
+                content: Some(response.as_ref().to_string()),
                 ..Default::default()
             }),
         };
@@ -51,7 +51,32 @@ impl Interaction {
             format!("interactions/{}/{}/callback", self.id, self.token).as_str(),
             Some(JsonValue::from(json_response)),
         )
-        .await
+        .await;
+    }
+
+    pub async fn defer(&self) {
+        let response = InteractionResponse {
+            type_: 5,
+            data: None,
+        };
+        let json_response = SerJson::serialize_json(&response);
+        send_request(
+            Method::POST,
+            format!("interactions/{}/{}/callback", self.id, self.token).as_str(),
+            Some(JsonValue::from(json_response)),
+        )
+        .await;
+    }
+
+    pub async fn followup<S: AsRef<str>>(&self, response: S) {
+        send_request(
+            Method::POST,
+            format!("webhooks/{}/{}", self.application_id, self.token).as_str(),
+            Some(json::object! {
+                content: response.as_ref(),
+            }),
+        )
+        .await;
     }
 }
 

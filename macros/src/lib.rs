@@ -365,6 +365,7 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let mut param_types = vec![];
     let mut param_names = vec![];
+    let mut param_descriptions = vec![];
     let mut stmts: Vec<proc_macro2::TokenStream> = vec![];
 
     let stop = false;
@@ -383,6 +384,25 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
         };
 
         param_names.push(quote! { stringify!(#name).to_string() });
+
+        // Extract the description from the comment
+        let description = param.attrs.iter()
+            .filter_map(|attr| {
+                if let syn::Meta::NameValue(nv) = &attr.meta {
+                    if nv.path.is_ident("doc") {
+                        if let syn::Expr::Lit(lit) = &nv.value {
+                            if let syn::Lit::Str(lit_str) = &lit.lit {
+                                return Some(lit_str.token().to_string().trim_matches('"').trim().to_string());
+                            }
+                        }
+                    }
+                }
+                None
+            })
+            .next()
+            .unwrap_or_else(|| String::from("No description provided"));
+        
+        param_descriptions.push(description);
         let type_ = (*param.ty).clone();
 
         let syn::Type::Path(path) = type_ else {
@@ -437,6 +457,7 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
                 description: String::from(#description),
                 fn_sig: vec![#(#param_types),*],
                 fn_param_names: vec![#(#param_names),*],
+                fn_param_descriptions: vec![#(#param_descriptions.to_string()),*],
                 handler_fn: f,
             }
         }
