@@ -96,3 +96,15 @@ pub enum ChannelType {
     GuildForum = 15,
     GuildMedia = 16,
 }
+
+#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum SelectMenuType {
+    #[default]
+    StringSelect = 3,
+    TextInput,
+    UserSelect,
+    RoleSelect,
+    MentionableSelect,
+    ChannelSelect,
+}
