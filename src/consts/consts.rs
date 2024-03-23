@@ -29,3 +29,70 @@ impl std::fmt::Display for ImageFormat {
         write!(f, "{}", self.get_extension())
     }
 }
+
+#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ComponentType {
+    /// Container for other components
+    ActionRow = 1,
+
+    /// Button object
+    Button,
+
+    /// Select menu for picking from defined text options
+    StringSelect,
+
+    /// Text input object
+    TextInput,
+
+    /// Select menu for users
+    UserSelect,
+
+    /// Select menu for roles
+    RoleSelect,
+
+    /// Select menu for mentionables (users and roles)
+    MentionableSelect,
+
+    /// Select menu for channels
+    ChannelSelect,
+}
+
+#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// For more information about the button styles
+/// head over to https://discord.com/developers/docs/interactions/message-components#button-object-button-styles
+pub enum ButtonStyle {
+    /// Color: blurple
+    Primary = 1,
+
+    /// Color: grey
+    Secondary,
+
+    /// Color: green
+    Success,
+
+    /// Color: red
+    Danger,
+
+    /// Color: grey, navigates to a URL
+    Link,
+}
+
+#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ChannelType {
+    GuildText = 0,
+    DM = 1,
+    GuildVoice = 2,
+    GroupDm = 3,
+    GuildCategory = 4,
+    GuildAnnouncement = 5,
+    AnnouncementThread = 10,
+    PublicThread = 11,
+    PrivateThread = 12,
+    GuildStageVoice = 13,
+    GuildDirectory = 14,
+    GuildForum = 15,
+    GuildMedia = 16,
+}
