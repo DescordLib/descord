@@ -25,6 +25,7 @@ pub mod prelude {
         consts::ImageFormat,
         consts::ButtonStyle,
         consts::ComponentType,
+        consts::SelectMenuType,
         intents::GatewayIntent,
         models::{
             channel::*, channel::*, component_builder::*, components::*, embed::*,

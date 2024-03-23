@@ -180,8 +180,8 @@ async fn reaction_add(reaction: Reaction) {
 }
 
 #[command]
-async fn button(message: Message) {
-    let b1 : Component = ComponentBuilder::button(ButtonObject {
+async fn components(message: Message) {
+    let b1: Component = ComponentBuilder::button(ButtonObject {
         style: ButtonStyle::Primary as _,
         label: Some("Click me".to_string()),
         custom_id: Some("btn1".to_string()),
@@ -206,12 +206,29 @@ async fn button(message: Message) {
     })
     .unwrap();
 
+    let select = ComponentBuilder::select(SelectObject {
+        select_type: SelectMenuType::StringSelect,
+        placeholder: Some(String::from("String Select example")),
+        custom_id: String::from("select"),
+        options: Some(vec![
+            SelectOption {
+                label: "abc".to_string(),
+                value: "abc".to_string(),
+                ..Default::default()
+            },
+            SelectOption {
+                label: "def".to_string(),
+                value: "def".to_string(),
+                ..Default::default()
+            },
+        ]),
+        ..Default::default()
+    })
+    .unwrap();
+
     message
         .reply(CreateMessageData {
-            components: vec![
-                vec![b1],
-                vec![b2, b3],
-            ],
+            components: vec![vec![b1], vec![b2, b3], vec![select]],
             ..Default::default()
         })
         .await;

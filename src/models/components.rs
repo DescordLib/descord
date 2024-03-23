@@ -1,6 +1,6 @@
 use nanoserde::{DeJson, SerJson};
 
-use crate::consts::ButtonStyle;
+use crate::consts::{ButtonStyle, ChannelType, SelectMenuType};
 
 use super::emoji::Emoji;
 
@@ -33,20 +33,46 @@ pub struct Component {
 
 #[derive(DeJson, SerJson, Debug, Default, Clone)]
 pub struct SelectOption {
-    label: String,
-    value: String,
-    description: Option<String>,
-    emoji: Option<Emoji>,
-    default: Option<bool>,
+    pub label: String,
+    pub value: String,
+    pub description: Option<String>,
+    pub emoji: Option<Emoji>,
+    pub default: Option<bool>,
 }
 
 #[derive(DeJson, SerJson, Debug, Default, Clone)]
 pub struct SelectDefaultValue {
+    /// ID of a user, role, or channel
     pub id: String,
 
     /// Either "user", "roles", or "channel"
     #[nserde(rename = "type")]
     pub type_: String,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct SelectObject {
+    pub select_type: SelectMenuType,
+    pub custom_id: String,
+    pub options: Option<Vec<SelectOption>>,
+    pub channel_types: Option<Vec<ChannelType>>,
+    pub placeholder: Option<String>,
+    pub default_values: Option<Vec<SelectDefaultValue>>,
+    pub min_values: Option<u32>,
+    pub max_values: Option<u32>,
+    pub disabled: bool,
+}
+
+impl SelectObject {
+    pub(crate) fn verify(&self) -> Result<(), &'static str> {
+        if self.min_values.map(|i| i <= 25) == Some(false)
+            || self.max_values.map(|i| i <= 25) == Some(false)
+        {
+            return Err("Min and max values should be in the range 0 to 25");
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Default, Clone)]
@@ -60,7 +86,7 @@ pub struct ButtonObject {
 }
 
 impl ButtonObject {
-    pub fn verify(&self) -> Result<(), &'static str> {
+    pub(crate) fn verify(&self) -> Result<(), &'static str> {
         if self.style == ButtonStyle::Link as u32 {
             if self.custom_id.is_some() {
                 return Err("Link buttons cannot have a custom id");
@@ -75,32 +101,3 @@ impl ButtonObject {
     }
 }
 
-impl Into<Component> for ButtonObject {
-    fn into(self) -> Component {
-        let ButtonObject {
-            style,
-            label,
-            emoji,
-            custom_id,
-            url,
-            disabled,
-        } = self;
-
-        Component {
-            type_: 2,
-            label,
-            emoji,
-            custom_id,
-            url,
-            disabled,
-            style: Some(style),
-            components: None,
-            options: None,
-            channel_types: None,
-            placeholder: None,
-            default_values: None,
-            min_values: None,
-            max_values: None,
-        }
-    }
-}
