@@ -1,5 +1,6 @@
 use reqwest::Method;
 use std::collections::HashMap;
+
 use std::sync::Mutex;
 
 use json::object;
@@ -12,7 +13,9 @@ use crate::utils::send_request;
 use crate::ws::WsManager;
 use crate::{consts, Event};
 
+// SAFETY: These will always be valid if accessed from an event.
 lazy_static::lazy_static! {
+    pub(crate) static ref BOT_ID: Mutex<Option<String>> = Mutex::new(None);
     pub(crate) static ref TOKEN: Mutex<Option<String>> = Mutex::new(None);
 }
 
@@ -85,42 +88,39 @@ impl Client {
     }
 
     pub async fn register_slash_commands(&mut self, commands: Vec<SlashCommand>) {
-        let response = send_request(Method::GET, "users/@me", None).await;
-        let bot_id =
-            json::parse(response.unwrap().text().await.unwrap().as_str()).unwrap_or_else(|_| {
-                eprintln!("Failed to parse JSON response");
-                json::JsonValue::Null
-            })["id"]
-                .as_str()
-                .unwrap_or_else(|| {
-                    eprintln!("Failed to get 'id' from JSON response");
-                    ""
-                })
-                .to_string();
         for command in commands {
+            log::info!("Registering '{}' slash command", command.name);
+
             let response = send_request(
                 Method::POST,
-                format!("applications/{}/commands", bot_id).as_str(),
+                format!(
+                    "applications/{}/commands",
+                    BOT_ID.lock().unwrap().as_ref().unwrap()
+                )
+                .as_str(),
                 Some(json::object! {
-                    "name" => command.name.clone(),
-                    "description" => command.description.clone(),
+                    name: command.name.clone(),
+                    description: command.description.clone(),
                     // "options" => command.options,
                 }),
             )
-            .await;
-            let command_id = json::parse(response.unwrap().text().await.unwrap().as_str())
-                .unwrap_or_else(|_| {
-                    eprintln!("Failed to parse JSON response");
-                    json::JsonValue::Null
-                })["id"]
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+
+            let command_id = json::parse(&response).expect("Failed to parse JSON response")["id"]
                 .as_str()
-                .unwrap_or_else(|| {
-                    eprintln!("Failed to get 'id' from JSON response");
-                    ""
-                })
+                .expect("Failed to get 'id' from JSON response")
                 .to_string();
 
-            println!("Command ID: {}", command_id);
+            log::info!(
+                "Registered '{}' slash command, command id: {}",
+                command.name,
+                command_id
+            );
+
             self.slash_commands.insert(command_id, command.clone());
         }
     }

@@ -2,6 +2,7 @@ use guild::{GuildCreate, GuildCreateResponse};
 use log::*;
 use nanoserde::DeJson;
 
+use crate::client::BOT_ID;
 use crate::internals::*;
 
 use crate::models::interaction::{Interaction, InteractionResponsePayload};
@@ -137,6 +138,9 @@ impl WsManager {
         let data = match event {
             Event::Ready => {
                 let data = ReadyResponse::deserialize_json(&payload.raw_json).unwrap();
+
+                *BOT_ID.lock().unwrap() = Some(data.data.user.id.clone());
+
                 data.data.into()
             }
 
