@@ -1,51 +1,60 @@
-use nanoserde::{DeJson, SerJson};
+use std::collections::HashMap;
+
 use crate::consts::*;
 use crate::models::guild::GuildMember;
+use nanoserde::{DeJson, SerJson};
 
-#[derive( SerJson, Clone, Debug)]
+use super::{channel::Channel, user::User, message_response::Message};
+
+#[derive(DeJson, SerJson, Clone, Debug)]
 pub struct Interaction {
+    pub id: String,
+    pub application_id: String,
     #[nserde(rename = "type")]
-    pub type_: i32,
+    pub type_: u32,
+    pub data: Option<InteractionData>,
+    pub channel: Option<Channel>,
+    pub channel_id: Option<String>,
+    pub member: Option<GuildMember>,
+    pub user: Option<User>,
     pub token: String,
-    pub member: GuildMember,
-    pub id: String,
-    pub guild_id: String,
+    pub message: Option<Message>,
     pub app_permissions: String,
-    pub guild_locale: String,
-    pub locale: String,
-    pub data: InteractionData,
-    pub channel_id: String,
+    pub locale: Option<String>,
+    pub guild_locale: Option<String>,
+    pub context: Option<u32>,
 }
 
-impl Interaction {
-    pub fn get_name(&self) -> &str {
-        &self.data.name
-    }
-
-    pub fn get_options(&self) -> &Vec<InteractionOption> {
-        &self.data.options
-    }
-
-    pub fn get_id(&self) -> &str {
-        &self.id
-    }
-
-    pub fn get_channel_id(&self) -> &str {
-        &self.channel_id
-    }
-}
-
-#[derive(SerJson, Clone, Debug)]
+#[derive(DeJson, SerJson, Clone, Debug)]
 pub struct InteractionData {
-    pub name: String,
-    pub options: Vec<InteractionOption>,
-    pub r#type: i32,
     pub id: String,
+    #[nserde(rename = "name")]
+    pub command_name: String,
+    #[nserde(rename = "type")]
+    pub type_: u32,
+    pub resolved: Option<ResolvedData>,
+    pub options: Option<Vec<AppCommandInteractionData>>,
+    pub guild_id: Option<String>,
+    pub target_id: Option<String>,
 }
 
-#[derive( SerJson, Clone, Debug)]
-pub struct InteractionOption {
+#[derive(DeJson, SerJson, Clone, Debug)]
+pub struct ResolvedData {
+    pub users: Option<HashMap<String, User>>,
+    pub members: Option<HashMap<String, GuildMember>>,
+    pub channels: Option<HashMap<String, Channel>>,
+    pub messages: Option<HashMap<String, Message>>,
+
+    // TODO: roles, attachments
+}
+
+#[derive(DeJson, SerJson, Clone, Debug)]
+pub struct AppCommandInteractionData {
     pub name: String,
+    #[nserde(rename = "type")]
+    pub type_: u32,
+    /// string, int, float, or bool
     pub value: String,
-    pub r#type: i32,
+    pub options: Option<Vec<AppCommandInteractionData>>,
+    pub focused: Option<bool>,
 }
