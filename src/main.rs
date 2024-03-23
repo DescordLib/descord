@@ -30,9 +30,11 @@ async fn main() {
     client.login().await;
 }
 
-#[slash(name = "ping", description = "Replies with a cool pong!")]
-async fn ping(interaction: Interaction) {
-    interaction.reply("Pong!").await;
+#[slash(name = "channel", description = "Get channel info")]
+async fn ping(interaction: Interaction, channel: Channel) {
+    interaction
+        .reply(format!("Channel: {}", channel.name).as_str())
+        .await;
 }
 
 #[slash(name = "greet", description = "Greets a person")]

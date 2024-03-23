@@ -85,16 +85,6 @@ impl Client {
         });
     }
 
-    fn map_param_type_to_u8(param_type: &ParamType) -> u8 {
-        match param_type {
-            ParamType::String => 3,
-            ParamType::Int => 4,
-            ParamType::User => 6,
-            ParamType::Channel => 7,
-            _ => 3,
-        }
-    }
-
     pub async fn register_slash_commands(&mut self, commands: Vec<SlashCommand>) {
         fn map_param_type_to_u8(param_type: &ParamType) -> u8 {
             match param_type {
@@ -263,7 +253,8 @@ impl Client {
                 .unwrap();
 
                 println!(
-                    "Removed slash command, command id: {}",
+                    "Removed slash command '{}', command id: {}",
+                    registered_command["name"].as_str().unwrap_or(""),
                     registered_command["id"].as_str().unwrap_or("")
                 );
             }
