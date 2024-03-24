@@ -30,10 +30,8 @@ async fn main() {
 #[slash(name = "greet", description = "Get channel info")]
 async fn ping(
     interaction: Interaction,
-    /// The channel to get info about
-    channel: Channel,
-    /// The user to ping
-    user: User,
+    #[description = "The channel to get info about"] channel: Channel,
+    #[description = "The user to ping"] user: User,
 ) {
     interaction
         .reply(format!(
@@ -49,11 +47,12 @@ async fn ping(
 #[slash(name = "echo", description = "Echoes the input")]
 async fn echo_slash(
     interaction: Interaction,
-    /// The message to echo
-    message: String,
+    #[description = "The message to echo"]
+    #[rename = "message"]
+    msg: String,
 ) {
     interaction.defer().await;
-    interaction.followup(message).await;
+    interaction.followup(msg).await;
 }
 
 #[event]
@@ -219,8 +218,8 @@ async fn components(message: Message) {
         .await;
 }
 
-#[event]
-async fn interaction_create(interaction: Interaction) {
+// #[event]
+// async fn interaction_create(interaction: Interaction) {
     // println!("interaction: {:?}", interaction);
     // int.message
     //     .unwrap()
@@ -229,4 +228,4 @@ async fn interaction_create(interaction: Interaction) {
     //         int.data.unwrap().custom_id.unwrap()
     //     ))
     //     .await;
-}
+// }

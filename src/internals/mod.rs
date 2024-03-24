@@ -173,6 +173,7 @@ pub struct SlashCommand {
     pub handler_fn: SlashHandlerFn,
     pub fn_param_names: Vec<String>,
     pub fn_param_descriptions: Vec<String>,
+    pub fn_param_renames: Vec<Option<String>>,
 }
 
 impl SlashCommand {

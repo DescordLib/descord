@@ -14,6 +14,8 @@ use crate::utils::send_request;
 use crate::ws::WsManager;
 use crate::{consts, internals, Event};
 
+use log::{error, info};
+
 // SAFETY: These will always be valid if accessed from an event.
 lazy_static::lazy_static! {
     pub(crate) static ref BOT_ID: Mutex<Option<String>> = Mutex::new(None);
@@ -102,12 +104,12 @@ impl Client {
         let response = send_request(Method::GET, "users/@me", None).await;
         let bot_id =
             json::parse(response.unwrap().text().await.unwrap().as_str()).unwrap_or_else(|_| {
-                eprintln!("Failed to parse JSON response");
+                error!("Failed to parse JSON response");
                 json::JsonValue::Null
             })["id"]
                 .as_str()
                 .unwrap_or_else(|| {
-                    eprintln!("Failed to get 'id' from JSON response");
+                    error!("Failed to get 'id' from JSON response");
                     ""
                 })
                 .to_string();
@@ -131,9 +133,11 @@ impl Client {
             let options = local_command
                 .fn_param_names
                 .iter()
+                .zip(local_command.fn_param_renames.iter())
                 .zip(local_command.fn_sig.iter())
                 .zip(local_command.fn_param_descriptions.iter())
-                .map(|((name, type_), description)| {
+                .map(|(((name, rename), type_), description)| {
+                    let name = rename.as_ref().unwrap_or_else(|| name);
                     json::object! {
                         name: name.clone(),
                         description: description.clone(),
@@ -161,9 +165,16 @@ impl Client {
                     .map(|opt| opt["type"].as_u8().unwrap_or(0))
                     .collect();
 
+                let fn_param_names = local_command
+                    .fn_param_names
+                    .iter()
+                    .zip(local_command.fn_param_renames.iter())
+                    .map(|(name, rename)| rename.as_ref().unwrap_or(name))
+                    .collect::<Vec<_>>();
+
                 if local_command.description
                     != registered_command["description"].as_str().unwrap_or("")
-                    || local_command.fn_param_names != registered_names
+                    || fn_param_names != registered_names
                     || local_command.fn_param_descriptions != registered_descriptions
                     || local_command
                         .fn_sig
@@ -191,13 +202,13 @@ impl Client {
                     .await
                     .unwrap();
 
-                    println!(
+                    info!(
                         "Updated '{}' slash command, command id: {}",
                         local_command.name,
                         registered_command["id"].as_str().unwrap_or("").to_string()
                     );
                 } else {
-                    println!(
+                    info!(
                         "No changes detected in '{}' slash command, command id: {}",
                         local_command.name,
                         registered_command["id"].as_str().unwrap_or("").to_string()
@@ -230,7 +241,7 @@ impl Client {
                     .expect("Failed to get 'id' from JSON response")
                     .to_string();
 
-                println!(
+                info!(
                     "Registered '{}' slash command, command id: {}",
                     local_command.name, command_id
                 );
@@ -261,7 +272,7 @@ impl Client {
                 .await
                 .unwrap();
 
-                println!(
+                info!(
                     "Removed slash command '{}', command id: {}",
                     registered_command["name"].as_str().unwrap_or(""),
                     registered_command["id"].as_str().unwrap_or("")

@@ -305,6 +305,14 @@ struct SlashCommandArgs {
     description: Option<String>,
 }
 
+#[derive(Debug, FromMeta)]
+struct SlashOptionArgs {
+    #[darling(default)]
+    description: Option<String>,
+    #[darling(default)]
+    rename: Option<String>,
+}
+
 #[proc_macro_attribute]
 pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
     let function = parse_macro_input!(input as ItemFn);
@@ -340,7 +348,8 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
     let function_params = &function.sig.inputs;
     let function_vis = function.vis;
 
-    let error = || -> ! { panic!("Expected `descord::prelude::Interaction` as the first argument") };
+    let error =
+        || -> ! { panic!("Expected `descord::prelude::Interaction` as the first argument") };
     let first_param_name = match function_params.first() {
         Some(param) => {
             let param = match param {
@@ -366,6 +375,7 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
     let mut param_types = vec![];
     let mut param_names = vec![];
     let mut param_descriptions = vec![];
+    let mut param_renames = vec![];
     let mut stmts: Vec<proc_macro2::TokenStream> = vec![];
 
     let stop = false;
@@ -374,10 +384,11 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
             panic!("`Arg` should be the last parameter");
         }
 
-        let param = match param {
+        let mut param = match param {
             syn::FnArg::Typed(x) => x,
             _ => panic!("`self` is not allowed"),
-        };
+        }
+        .clone();
 
         let syn::Pat::Ident(name) = &*param.pat else {
             panic!();
@@ -385,24 +396,25 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
 
         param_names.push(quote! { stringify!(#name).to_string() });
 
-        // Extract the description from the comment
-        let description = param.attrs.iter()
-            .filter_map(|attr| {
-                if let syn::Meta::NameValue(nv) = &attr.meta {
-                    if nv.path.is_ident("doc") {
-                        if let syn::Expr::Lit(lit) = &nv.value {
-                            if let syn::Lit::Str(lit_str) = &lit.lit {
-                                return Some(lit_str.token().to_string().trim_matches('"').trim().to_string());
-                            }
-                        }
-                    }
-                }
-                None
-            })
-            .next()
-            .unwrap_or_else(|| String::from("No description provided"));
+        let attrs: Vec<_> = param
+            .attrs
+            .drain(..)
+            .map(|attr| darling::ast::NestedMeta::Meta(attr.meta))
+            .collect();
 
-        param_descriptions.push(description);
+        let param_attr = match SlashOptionArgs::from_list(&attrs) {
+            Ok(v) => v,
+            Err(e) => return TokenStream::from(e.write_errors()),
+        };
+
+        param_renames.push(if let Some(new_name) = param_attr.rename {
+            quote! { Some(String::from(#new_name)) }
+        } else {
+            quote! { None }
+        });
+
+        param_descriptions.push(param_attr.description.unwrap_or(" ".to_string()));
+
         let type_ = (*param.ty).clone();
 
         let syn::Type::Path(path) = type_ else {
@@ -458,6 +470,7 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
                 fn_sig: vec![#(#param_types),*],
                 fn_param_names: vec![#(#param_names),*],
                 fn_param_descriptions: vec![#(#param_descriptions.to_string()),*],
+                fn_param_renames: vec![#(#param_renames),*],
                 handler_fn: f,
             }
         }
