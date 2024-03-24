@@ -165,6 +165,12 @@ impl Command {
     }
 }
 
+// TODO: maybe optimize this.... nah, no need
+pub(crate) type AutoCompleteFn =
+    fn(
+        String,
+    ) -> std::pin::Pin<Box<dyn futures_util::Future<Output = Vec<String>> + Send + 'static>>;
+
 #[derive(Debug, Clone)]
 pub struct SlashCommand {
     pub name: String,
@@ -173,7 +179,11 @@ pub struct SlashCommand {
     pub handler_fn: SlashHandlerFn,
     pub fn_param_names: Vec<String>,
     pub fn_param_descriptions: Vec<String>,
+
+    // TODO: remove this and use `fn_param_names` field
     pub fn_param_renames: Vec<Option<String>>,
+
+    pub fn_param_autocomplete: Vec<Option<AutoCompleteFn>>,
 }
 
 impl SlashCommand {

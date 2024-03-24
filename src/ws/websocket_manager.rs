@@ -1,13 +1,18 @@
 use guild::{GuildCreate, GuildCreateResponse};
 use log::*;
-use nanoserde::DeJson;
+use nanoserde::{DeJson, SerJson};
+use reqwest::Method;
 
 use crate::client::BOT_ID;
 use crate::internals::*;
 
-use crate::models::interaction::{Interaction, InteractionResponsePayload};
+use crate::models::interaction::{
+    Interaction, InteractionAutoCompleteChoice, InteractionAutoCompleteChoicePlaceholder,
+    InteractionAutoCompleteChoices, InteractionResponsePayload,
+};
 use crate::models::ready_response::ReadyResponse;
 use crate::models::*;
+use crate::utils::send_request;
 use deleted_message_response::DeletedMessageResponse;
 use message_response::MessageResponse;
 use reaction_response::ReactionResponse;
@@ -32,7 +37,7 @@ use tokio_tungstenite::{connect_async, WebSocketStream};
 use url::Url;
 
 use crate::consts::opcode::OpCode;
-use crate::consts::{self, payloads};
+use crate::consts::{self, payloads, InteractionCallbackType, InteractionType};
 use crate::handlers::events::Event;
 use crate::ws::payload::Payload;
 use crate::Client;
@@ -198,12 +203,56 @@ impl WsManager {
 
             Event::InteractionCreate => {
                 let data = InteractionResponsePayload::deserialize_json(&payload.raw_json).unwrap();
+                println!("data: {data:#?}");
 
-                if let Some(deeper_data) = &data.data.data {
-                    if let Some(command) = slash_commands.get(&deeper_data.clone().id.unwrap()) {
-                        let handler = command.clone();
-                        handler.call(data.data).await;
-                        return Ok(());
+                if data.data.type_ == InteractionType::ApplicationCommand as u32 {
+                    if let Some(d) = &data.data.data {
+                        if let Some(command) = slash_commands.get(&d.clone().id.unwrap()) {
+                            let handler = command.clone();
+                            handler.call(data.data.clone()).await;
+                        }
+                    }
+                } else if data.data.type_ == InteractionType::ApplicationCommandAutocomplete as u32
+                {
+                    // Perfectly safe code, no optimization needed :)
+                    let slash_command = slash_commands
+                        .get(data.data.data.as_ref().unwrap().id.as_ref().unwrap())
+                        .unwrap();
+                    let options = &data.data.data.as_ref().unwrap().options.as_ref().unwrap();
+
+                    for (idx, itm) in options.iter().enumerate() {
+                        if itm.focused.unwrap_or(false) {
+                            // SAFETY: this `unwrap` is safe... I guess
+                            let choices = slash_command.fn_param_autocomplete[idx].unwrap()(
+                                itm.value.clone(),
+                            )
+                            .await
+                            .into_iter()
+                            .inspect(|choice| {
+                                dbg!(choice);
+                            })
+                            // FIXME: separate these
+                            .map(|i| InteractionAutoCompleteChoice {
+                                name: i.clone(),
+                                value: i,
+                            })
+                            .collect();
+
+                            send_request(
+                                Method::POST,
+                                &format!(
+                                    "/interactions/{}/{}/callback",
+                                    data.data.id, data.data.token
+                                ),
+                                Some(json::parse(&dbg!(InteractionAutoCompleteChoices {
+                                    type_: InteractionCallbackType::ApplicationCommandAutocompleteResult as _,
+                                    data: Some(InteractionAutoCompleteChoicePlaceholder {
+                                        choices
+                                    })
+                                }.serialize_json())).unwrap()),
+                            )
+                            .await;
+                        }
                     }
                 }
 

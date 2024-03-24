@@ -46,15 +46,20 @@ async fn ping(
     interaction.followup("This is a followup message").await;
 }
 
+async fn auto_cmp(_value: String) -> Vec<String> {
+    // too lazy to implement a search logic
+    vec!["thatmagicalcat".to_string(), "fireplank".to_string()]
+}
+
 #[slash(name = "echo", description = "Echoes the input")]
 async fn echo_slash(
     interaction: Interaction,
     /// The message to echo
-    #[rename = "message"]
-    msg: String,
+    #[autocomplete = "auto_cmp"]
+    message: String,
 ) {
     interaction.defer().await;
-    interaction.followup(msg).await;
+    interaction.followup(message).await;
 }
 
 #[event]
@@ -222,7 +227,7 @@ async fn components(message: Message) {
 
 // #[event]
 // async fn interaction_create(interaction: Interaction) {
-    // println!("interaction: {:?}", interaction);
+    // println!("interaction: {:#?}", interaction);
     // int.message
     //     .unwrap()
     //     .send_in_channel(format!(
@@ -231,3 +236,4 @@ async fn components(message: Message) {
     //     ))
     //     .await;
 // }
+

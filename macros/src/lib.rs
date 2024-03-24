@@ -311,6 +311,7 @@ struct SlashOptionArgs {
     doc: Option<String>,
     #[darling(default)]
     rename: Option<String>,
+    autocomplete: Option<syn::Path>,
 }
 
 #[proc_macro_attribute]
@@ -375,6 +376,7 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
     let mut param_types = vec![];
     let mut param_names = vec![];
     let mut param_descriptions = vec![];
+    let mut param_autocomplete = vec![];
     let mut param_renames = vec![];
     let mut stmts: Vec<proc_macro2::TokenStream> = vec![];
 
@@ -406,6 +408,16 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
             Ok(v) => v,
             Err(e) => return TokenStream::from(e.write_errors()),
         };
+
+        param_autocomplete.push(if let Some(autocomplete_fn) = param_attr.autocomplete {
+            quote! { Some(
+                |query: String| Box::pin(async move {
+                    #autocomplete_fn(query).await.into_iter().take(25).collect::<Vec<_>>()
+                })
+            ) }
+        } else {
+            quote! { None }
+        });
 
         param_renames.push(if let Some(new_name) = param_attr.rename {
             quote! { Some(String::from(#new_name)) }
@@ -476,6 +488,8 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
                 fn_param_names: vec![#(#param_names),*],
                 fn_param_descriptions: vec![#(#param_descriptions.to_string()),*],
                 fn_param_renames: vec![#(#param_renames),*],
+                fn_param_autocomplete: vec![#(#param_autocomplete),*],
+
                 handler_fn: f,
             }
         }

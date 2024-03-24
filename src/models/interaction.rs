@@ -82,7 +82,11 @@ impl Interaction {
     pub async fn edit_original<S: AsRef<str>>(&self, response: S) {
         send_request(
             Method::PATCH,
-            format!("webhooks/{}/{}/messages/@original", self.application_id, self.token).as_str(),
+            format!(
+                "webhooks/{}/{}/messages/@original",
+                self.application_id, self.token
+            )
+            .as_str(),
             Some(json::object! {
                 content: response.as_ref(),
             }),
@@ -93,7 +97,11 @@ impl Interaction {
     pub async fn delete_original(&self) {
         send_request(
             Method::DELETE,
-            format!("webhooks/{}/{}/messages/@original", self.application_id, self.token).as_str(),
+            format!(
+                "webhooks/{}/{}/messages/@original",
+                self.application_id, self.token
+            )
+            .as_str(),
             None,
         )
         .await;
@@ -134,6 +142,24 @@ pub struct AppCommandInteractionData {
     pub value: String,
     pub options: Option<Vec<AppCommandInteractionData>>,
     pub focused: Option<bool>,
+}
+
+#[derive(DeJson, SerJson, Clone, Debug, Default)]
+pub struct InteractionAutoCompleteChoices {
+    #[nserde(rename = "type")]
+    pub type_: u32,
+    pub data: Option<InteractionAutoCompleteChoicePlaceholder>,
+}
+
+#[derive(DeJson, SerJson, Clone, Debug, Default)]
+pub struct InteractionAutoCompleteChoicePlaceholder {
+    pub choices: Vec<InteractionAutoCompleteChoice>,
+}
+
+#[derive(DeJson, SerJson, Clone, Debug, Default)]
+pub struct InteractionAutoCompleteChoice {
+    pub name: String,
+    pub value: String,
 }
 
 #[derive(DeJson, SerJson, Clone, Debug)]

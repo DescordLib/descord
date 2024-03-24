@@ -28,16 +28,18 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
         let options = local_command
             .fn_param_names
             .iter()
+            .zip(local_command.fn_param_autocomplete.iter())
             .zip(local_command.fn_param_renames.iter())
             .zip(local_command.fn_sig.iter())
             .zip(local_command.fn_param_descriptions.iter())
-            .map(|(((name, rename), type_), description)| {
+            .map(|((((name, autocomplete), rename), type_), description)| {
                 let name = rename.as_ref().unwrap_or_else(|| name);
                 json::object! {
                     name: name.clone(),
                     description: description.clone(),
                     type: map_param_type_to_u32(type_),
                     required: true,
+                    autocomplete: autocomplete.is_some(),
                 }
             })
             .collect::<Vec<_>>();
