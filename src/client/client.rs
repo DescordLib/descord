@@ -8,9 +8,9 @@ use nanoserde::SerJson;
 
 use crate::consts::intents::GatewayIntent;
 use crate::internals::{EventHandler, *};
-use crate::models::interaction::ApplicationCommandOption;
+use crate::models::application_command::ApplicationCommandOption;
 use crate::prelude::{CreateMessageData, Message};
-use crate::utils::send_request;
+use crate::utils::{self, send_request};
 use crate::ws::WsManager;
 use crate::{consts, internals, Event};
 
@@ -91,193 +91,10 @@ impl Client {
     }
 
     pub async fn register_slash_commands(&mut self, commands: Vec<SlashCommand>) {
-        fn map_param_type_to_u8(param_type: &ParamType) -> u8 {
-            match param_type {
-                ParamType::String => 3,
-                ParamType::Int => 4,
-                ParamType::User => 6,
-                ParamType::Channel => 7,
-                _ => 3,
-            }
-        }
-
-        let response = send_request(Method::GET, "users/@me", None).await;
-        let bot_id =
-            json::parse(response.unwrap().text().await.unwrap().as_str()).unwrap_or_else(|_| {
-                error!("Failed to parse JSON response");
-                json::JsonValue::Null
-            })["id"]
-                .as_str()
-                .unwrap_or_else(|| {
-                    error!("Failed to get 'id' from JSON response");
-                    ""
-                })
-                .to_string();
-
-        let registered_commands = json::parse(
-            &send_request(
-                Method::GET,
-                format!("applications/{}/commands", bot_id).as_str(),
-                None,
-            )
-            .await
-            .unwrap()
-            .text()
-            .await
-            .unwrap(),
-        )
-        .expect("Failed to parse JSON response");
-
-        // Iterate over the local commands
-        for local_command in &commands {
-            let options = local_command
-                .fn_param_names
-                .iter()
-                .zip(local_command.fn_param_renames.iter())
-                .zip(local_command.fn_sig.iter())
-                .zip(local_command.fn_param_descriptions.iter())
-                .map(|(((name, rename), type_), description)| {
-                    let name = rename.as_ref().unwrap_or_else(|| name);
-                    json::object! {
-                        name: name.clone(),
-                        description: description.clone(),
-                        type: map_param_type_to_u8(type_),
-                        required: true,
-                    }
-                })
-                .collect::<Vec<_>>();
-
-            // If the command exists in the fetched commands
-            if let Some(registered_command) = registered_commands
-                .members()
-                .find(|&cmd| cmd["name"].as_str().unwrap_or("") == local_command.name)
-            {
-                let registered_options = registered_command["options"].members();
-                let registered_names: Vec<_> = registered_options
-                    .clone()
-                    .map(|opt| opt["name"].as_str().unwrap_or(""))
-                    .collect();
-                let registered_descriptions: Vec<_> = registered_options
-                    .clone()
-                    .map(|opt| opt["description"].as_str().unwrap_or(""))
-                    .collect();
-                let registered_types: Vec<_> = registered_options
-                    .map(|opt| opt["type"].as_u8().unwrap_or(0))
-                    .collect();
-
-                let fn_param_names = local_command
-                    .fn_param_names
-                    .iter()
-                    .zip(local_command.fn_param_renames.iter())
-                    .map(|(name, rename)| rename.as_ref().unwrap_or(name))
-                    .collect::<Vec<_>>();
-
-                if local_command.description
-                    != registered_command["description"].as_str().unwrap_or("")
-                    || fn_param_names != registered_names
-                    || local_command.fn_param_descriptions != registered_descriptions
-                    || local_command
-                        .fn_sig
-                        .iter()
-                        .map(map_param_type_to_u8)
-                        .collect::<Vec<_>>()
-                        != registered_types
-                {
-                    let response = send_request(
-                        Method::PATCH,
-                        format!(
-                            "applications/{}/commands/{}",
-                            bot_id, registered_command["id"]
-                        )
-                        .as_str(),
-                        Some(json::object! {
-                            name: local_command.name.clone(),
-                            description: local_command.description.clone(),
-                            options: options,
-                        }),
-                    )
-                    .await
-                    .unwrap()
-                    .text()
-                    .await
-                    .unwrap();
-
-                    info!(
-                        "Updated '{}' slash command, command id: {}",
-                        local_command.name,
-                        registered_command["id"].as_str().unwrap_or("").to_string()
-                    );
-                } else {
-                    info!(
-                        "No changes detected in '{}' slash command, command id: {}",
-                        local_command.name,
-                        registered_command["id"].as_str().unwrap_or("").to_string()
-                    );
-                    self.slash_commands.insert(
-                        registered_command["id"].as_str().unwrap_or("").to_string(),
-                        local_command.clone(),
-                    );
-                }
-            } else {
-                // If the command does not exist in the fetched commands, register it
-                let response = send_request(
-                    Method::POST,
-                    format!("applications/{}/commands", bot_id).as_str(),
-                    Some(json::object! {
-                        name: local_command.name.clone(),
-                        description: local_command.description.clone(),
-                        options: options,
-                    }),
-                )
+        self.slash_commands.extend(
+            utils::slash::register_slash_commands(commands)
                 .await
-                .unwrap()
-                .text()
-                .await
-                .unwrap();
-
-                let command_id = json::parse(&response).expect("Failed to parse JSON response")
-                    ["id"]
-                    .as_str()
-                    .expect("Failed to get 'id' from JSON response")
-                    .to_string();
-
-                info!(
-                    "Registered '{}' slash command, command id: {}",
-                    local_command.name, command_id
-                );
-
-                self.slash_commands
-                    .insert(command_id, local_command.clone());
-            }
-        }
-
-        // Iterate over the fetched commands
-        for registered_command in registered_commands.members() {
-            // If the command does not exist in the local commands, remove it
-            if commands
-                .iter()
-                .find(|&cmd| cmd.name == registered_command["name"].as_str().unwrap_or(""))
-                .is_none()
-            {
-                send_request(
-                    Method::DELETE,
-                    format!(
-                        "applications/{}/commands/{}",
-                        bot_id,
-                        registered_command["id"].as_str().unwrap_or("")
-                    )
-                    .as_str(),
-                    None,
-                )
-                .await
-                .unwrap();
-
-                info!(
-                    "Removed slash command '{}', command id: {}",
-                    registered_command["name"].as_str().unwrap_or(""),
-                    registered_command["id"].as_str().unwrap_or("")
-                );
-            }
-        }
+                .into_iter(),
+        );
     }
 }
