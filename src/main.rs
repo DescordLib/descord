@@ -53,7 +53,7 @@ async fn auto_cmp(_value: String) -> Vec<String> {
 async fn echo_slash(
     interaction: Interaction,
     /// The message to echo
-    #[autocomplete = "auto_cmp"]
+    #[autocomplete = auto_cmp]
     message: String,
 ) {
     interaction.defer().await;

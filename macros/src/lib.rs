@@ -311,7 +311,7 @@ struct SlashOptionArgs {
     doc: Option<String>,
     #[darling(default)]
     rename: Option<String>,
-    autocomplete: Option<syn::Path>,
+    autocomplete: Option<syn::ExprPath>,
 }
 
 #[proc_macro_attribute]

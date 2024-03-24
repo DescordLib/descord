@@ -63,11 +63,22 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
                 .map(|opt| opt.description.as_str())
                 .collect();
 
+            let registered_autocompletes = registered_options
+                .iter()
+                .map(|opt| opt.autocomplete.unwrap_or(false))
+                .collect::<Vec<_>>();
+
             let fn_param_names = local_command
                 .fn_param_names
                 .iter()
                 .zip(local_command.fn_param_renames.iter())
                 .map(|(name, rename)| rename.as_ref().unwrap_or(name))
+                .collect::<Vec<_>>();
+
+            let fn_param_autocompletes = local_command
+                .fn_param_autocomplete
+                .iter()
+                .map(|autocomplete| autocomplete.is_some())
                 .collect::<Vec<_>>();
 
             if local_command.description != registered_command.description
@@ -79,6 +90,7 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
                     .map(map_param_type_to_u32)
                     .collect::<Vec<_>>()
                     != registered_types
+                || fn_param_autocompletes != registered_autocompletes
             {
                 let response = send_request(
                     Method::PATCH,
