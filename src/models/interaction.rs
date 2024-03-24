@@ -37,11 +37,12 @@ pub struct Interaction {
 }
 
 impl Interaction {
-    pub async fn reply<S: AsRef<str>>(&self, response: S) {
+    pub async fn reply<S: AsRef<str>>(&self, response: S, ephemeral: bool) {
         let response = InteractionResponse {
             type_: 4,
             data: Some(InteractionResponseData {
                 content: Some(response.as_ref().to_string()),
+                flags: if ephemeral { Some(64) } else { None },
                 ..Default::default()
             }),
         };
@@ -82,7 +83,11 @@ impl Interaction {
     pub async fn edit_original<S: AsRef<str>>(&self, response: S) {
         send_request(
             Method::PATCH,
-            format!("webhooks/{}/{}/messages/@original", self.application_id, self.token).as_str(),
+            format!(
+                "webhooks/{}/{}/messages/@original",
+                self.application_id, self.token
+            )
+            .as_str(),
             Some(json::object! {
                 content: response.as_ref(),
             }),
@@ -93,7 +98,11 @@ impl Interaction {
     pub async fn delete_original(&self) {
         send_request(
             Method::DELETE,
-            format!("webhooks/{}/{}/messages/@original", self.application_id, self.token).as_str(),
+            format!(
+                "webhooks/{}/{}/messages/@original",
+                self.application_id, self.token
+            )
+            .as_str(),
             None,
         )
         .await;

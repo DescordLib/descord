@@ -1,4 +1,5 @@
 mod allowed_mentions;
+pub mod application_command;
 pub mod author;
 pub mod channel;
 pub mod component_builder;
@@ -17,5 +18,3 @@ pub mod message_response;
 pub mod reaction_response;
 pub mod ready_response;
 pub mod user;
-pub mod application_command;
-

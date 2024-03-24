@@ -36,11 +36,10 @@ async fn ping(
     user: User,
 ) {
     interaction
-        .reply(format!(
-            "Channel: {}\nUser: {}",
-            channel.name,
-            user.mention()
-        ))
+        .reply(
+            format!("Channel: {}\nUser: {}", channel.name, user.mention()),
+            false,
+        )
         .await;
 
     interaction.followup("This is a followup message").await;
@@ -55,6 +54,13 @@ async fn echo_slash(
 ) {
     interaction.defer().await;
     interaction.followup(msg).await;
+}
+
+#[slash(name = "whisper", description = "Respond with ephemeral message")]
+async fn whisper(interaction: Interaction) {
+    interaction
+        .reply("This is an ephemeral message", true)
+        .await;
 }
 
 #[event]
@@ -222,12 +228,12 @@ async fn components(message: Message) {
 
 // #[event]
 // async fn interaction_create(interaction: Interaction) {
-    // println!("interaction: {:?}", interaction);
-    // int.message
-    //     .unwrap()
-    //     .send_in_channel(format!(
-    //         "custom id: {}",
-    //         int.data.unwrap().custom_id.unwrap()
-    //     ))
-    //     .await;
+// println!("interaction: {:?}", interaction);
+// int.message
+//     .unwrap()
+//     .send_in_channel(format!(
+//         "custom id: {}",
+//         int.data.unwrap().custom_id.unwrap()
+//     ))
+//     .await;
 // }
