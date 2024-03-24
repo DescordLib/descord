@@ -37,11 +37,12 @@ pub struct Interaction {
 }
 
 impl Interaction {
-    pub async fn reply<S: AsRef<str>>(&self, response: S) {
+    pub async fn reply<S: AsRef<str>>(&self, response: S, ephemeral: bool) {
         let response = InteractionResponse {
             type_: 4,
             data: Some(InteractionResponseData {
                 content: Some(response.as_ref().to_string()),
+                flags: if ephemeral { Some(64) } else { None },
                 ..Default::default()
             }),
         };
