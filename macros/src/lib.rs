@@ -308,7 +308,7 @@ struct SlashCommandArgs {
 #[derive(Debug, FromMeta)]
 struct SlashOptionArgs {
     #[darling(default)]
-    description: Option<String>,
+    doc: Option<String>,
     #[darling(default)]
     rename: Option<String>,
 }
@@ -413,7 +413,12 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
             quote! { None }
         });
 
-        param_descriptions.push(param_attr.description.unwrap_or(" ".to_string()));
+        param_descriptions.push(
+            param_attr
+                .doc
+                .map(|i| i.trim().to_string())
+                .unwrap_or(String::new()),
+        );
 
         let type_ = (*param.ty).clone();
 

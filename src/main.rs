@@ -30,8 +30,10 @@ async fn main() {
 #[slash(name = "greet", description = "Get channel info")]
 async fn ping(
     interaction: Interaction,
-    #[description = "The channel to get info about"] channel: Channel,
-    #[description = "The user to ping"] user: User,
+    /// The channel to get info about
+    channel: Channel,
+    /// The user to ping
+    user: User,
 ) {
     interaction
         .reply(format!(
@@ -47,7 +49,7 @@ async fn ping(
 #[slash(name = "echo", description = "Echoes the input")]
 async fn echo_slash(
     interaction: Interaction,
-    #[description = "The message to echo"]
+    /// The message to echo
     #[rename = "message"]
     msg: String,
 ) {
