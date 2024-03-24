@@ -232,13 +232,12 @@ async fn components(message: Message) {
 
 // #[event]
 // async fn interaction_create(interaction: Interaction) {
-    // println!("interaction: {:#?}", interaction);
-    // int.message
-    //     .unwrap()
-    //     .send_in_channel(format!(
-    //         "custom id: {}",
-    //         int.data.unwrap().custom_id.unwrap()
-    //     ))
-    //     .await;
+// println!("interaction: {:#?}", interaction);
+// int.message
+//     .unwrap()
+//     .send_in_channel(format!(
+//         "custom id: {}",
+//         int.data.unwrap().custom_id.unwrap()
+//     ))
+//     .await;
 // }
-

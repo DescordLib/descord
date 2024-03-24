@@ -31,11 +31,10 @@ pub async fn fetch_application_commands(bot_id: &str) -> Vec<ApplicationCommand>
     .await
     .unwrap();
 
-    DeJson::deserialize_json(&resp)
-        .unwrap_or_else(|e| {
-            log::error!("Failed to deserialize JSON: {}", e);
-            vec![]
-        })
+    DeJson::deserialize_json(&resp).unwrap_or_else(|e| {
+        log::error!("Failed to deserialize JSON: {}", e);
+        vec![]
+    })
 }
 
 pub async fn get_bot_id() -> String {

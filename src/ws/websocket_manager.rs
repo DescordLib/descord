@@ -226,10 +226,6 @@ impl WsManager {
                             )
                             .await
                             .into_iter()
-                            .inspect(|choice| {
-                                dbg!(choice);
-                            })
-                            // FIXME: separate these
                             .map(|i| InteractionAutoCompleteChoice {
                                 name: i.clone(),
                                 value: i,
@@ -242,12 +238,12 @@ impl WsManager {
                                     "/interactions/{}/{}/callback",
                                     data.data.id, data.data.token
                                 ),
-                                Some(json::parse(&dbg!(InteractionAutoCompleteChoices {
+                                Some(json::parse(&InteractionAutoCompleteChoices {
                                     type_: InteractionCallbackType::ApplicationCommandAutocompleteResult as _,
                                     data: Some(InteractionAutoCompleteChoicePlaceholder {
                                         choices
                                     })
-                                }.serialize_json())).unwrap()),
+                                }.serialize_json()).unwrap()),
                             )
                             .await;
                         }
