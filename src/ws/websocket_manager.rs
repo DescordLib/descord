@@ -203,7 +203,6 @@ impl WsManager {
 
             Event::InteractionCreate => {
                 let data = InteractionResponsePayload::deserialize_json(&payload.raw_json).unwrap();
-                println!("data: {data:#?}");
 
                 if data.data.type_ == InteractionType::ApplicationCommand as u32 {
                     if let Some(d) = &data.data.data {
@@ -214,7 +213,6 @@ impl WsManager {
                     }
                 } else if data.data.type_ == InteractionType::ApplicationCommandAutocomplete as u32
                 {
-                    // Perfectly safe code, no optimization needed :)
                     let slash_command = slash_commands
                         .get(data.data.data.as_ref().unwrap().id.as_ref().unwrap())
                         .unwrap();
@@ -222,7 +220,7 @@ impl WsManager {
 
                     for (idx, itm) in options.iter().enumerate() {
                         if itm.focused.unwrap_or(false) {
-                            // SAFETY: this `unwrap` is safe... I guess
+                            // SAFETY: we know that the fn_param_autocomplete is Some
                             let choices = slash_command.fn_param_autocomplete[idx].unwrap()(
                                 itm.value.clone(),
                             )

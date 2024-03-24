@@ -165,7 +165,6 @@ impl Command {
     }
 }
 
-// TODO: maybe optimize this.... nah, no need
 pub(crate) type AutoCompleteFn =
     fn(
         String,

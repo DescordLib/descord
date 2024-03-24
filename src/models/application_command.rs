@@ -13,7 +13,7 @@ pub struct ApplicationCommand {
     // name_localizations: Option<>,
     pub description: String,
     // description_localizations: Option<>,
-    pub options: Vec<ApplicationCommandOption>,
+    pub options: Option<Vec<ApplicationCommandOption>>,
     pub default_member_permissions: Option<String>,
     pub nsfw: Option<bool>,
     pub integration_types: Vec<u32>,

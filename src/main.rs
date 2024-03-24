@@ -46,7 +46,6 @@ async fn ping(
 }
 
 async fn auto_cmp(_value: String) -> Vec<String> {
-    // too lazy to implement a search logic
     vec!["thatmagicalcat".to_string(), "fireplank".to_string()]
 }
 

@@ -49,7 +49,7 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
             .iter()
             .find(|&cmd| cmd.name.as_str() == local_command.name)
         {
-            let registered_options = &registered_command.options;
+            let registered_options = &registered_command.clone().options.unwrap_or_default();
             let registered_types: Vec<u32> =
                 registered_options.iter().map(|opt| opt.type_).collect();
 
