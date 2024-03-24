@@ -37,11 +37,11 @@ pub struct Interaction {
 }
 
 impl Interaction {
-    pub async fn reply(&self, response: &str) -> Result<reqwest::Response, reqwest::Error> {
+    pub async fn reply<S: AsRef<str>>(&self, response: S) {
         let response = InteractionResponse {
             type_: 4,
             data: Some(InteractionResponseData {
-                content: Some(response.to_string()),
+                content: Some(response.as_ref().to_string()),
                 ..Default::default()
             }),
         };
@@ -51,7 +51,52 @@ impl Interaction {
             format!("interactions/{}/{}/callback", self.id, self.token).as_str(),
             Some(JsonValue::from(json_response)),
         )
-        .await
+        .await;
+    }
+
+    pub async fn defer(&self) {
+        let response = InteractionResponse {
+            type_: 5,
+            data: None,
+        };
+        let json_response = SerJson::serialize_json(&response);
+        send_request(
+            Method::POST,
+            format!("interactions/{}/{}/callback", self.id, self.token).as_str(),
+            Some(JsonValue::from(json_response)),
+        )
+        .await;
+    }
+
+    pub async fn followup<S: AsRef<str>>(&self, response: S) {
+        send_request(
+            Method::POST,
+            format!("webhooks/{}/{}", self.application_id, self.token).as_str(),
+            Some(json::object! {
+                content: response.as_ref(),
+            }),
+        )
+        .await;
+    }
+
+    pub async fn edit_original<S: AsRef<str>>(&self, response: S) {
+        send_request(
+            Method::PATCH,
+            format!("webhooks/{}/{}/messages/@original", self.application_id, self.token).as_str(),
+            Some(json::object! {
+                content: response.as_ref(),
+            }),
+        )
+        .await;
+    }
+
+    pub async fn delete_original(&self) {
+        send_request(
+            Method::DELETE,
+            format!("webhooks/{}/{}/messages/@original", self.application_id, self.token).as_str(),
+            None,
+        )
+        .await;
     }
 }
 
@@ -89,6 +134,32 @@ pub struct AppCommandInteractionData {
     pub value: String,
     pub options: Option<Vec<AppCommandInteractionData>>,
     pub focused: Option<bool>,
+}
+
+#[derive(DeJson, SerJson, Clone, Debug)]
+pub struct ApplicationCommandOption {
+    #[nserde(rename = "type")]
+    pub type_: u32,
+    pub name: String,
+    pub name_localizations: Option<HashMap<String, String>>,
+    pub description: String,
+    pub description_localizations: Option<HashMap<String, String>>,
+    pub required: Option<bool>,
+    pub choices: Option<Vec<ApplicationCommandOptionChoice>>,
+    pub options: Option<Vec<ApplicationCommandOption>>,
+    pub channel_types: Option<Vec<u32>>,
+    pub min_value: Option<i32>,
+    pub max_value: Option<i32>,
+    pub min_length: Option<i32>,
+    pub max_length: Option<i32>,
+    pub autocomplete: Option<bool>,
+}
+
+#[derive(DeJson, SerJson, Clone, Debug)]
+pub struct ApplicationCommandOptionChoice {
+    pub name: String,
+    pub name_localizations: Option<HashMap<String, String>>,
+    pub value: String,
 }
 
 #[derive(DeJson, SerJson, Clone, Debug)]

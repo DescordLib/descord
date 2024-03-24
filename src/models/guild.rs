@@ -112,9 +112,9 @@ pub struct PartialGuild {
 #[derive(DeJson, SerJson, Debug, Clone)]
 pub struct Member {
     pub roles: Vec<String>,
-    pub mute: bool,
+    pub mute: Option<bool>,
     pub joined_at: String,
-    pub deaf: bool,
+    pub deaf: Option<bool>,
     pub is_pending: Option<bool>,
     pub permissions: Option<String>,
     pub user: Option<User>,

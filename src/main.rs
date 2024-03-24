@@ -23,16 +23,37 @@ async fn main() {
     )
     .await;
 
-    register_all_commands!(client => []);
-    register_all_events!(client => []);
-    register_all_slash_commands!(client => []);
-
+    register_all!(client => []);
     client.login().await;
 }
 
-#[slash(name = "ping", description = "Replies with a cool pong!")]
-async fn ping(interaction: Interaction) {
-    interaction.reply("Pong!").await;
+#[slash(name = "greet", description = "Get channel info")]
+async fn ping(
+    interaction: Interaction,
+    /// The channel to get info about
+    channel: Channel,
+    /// The user to ping
+    user: User,
+) {
+    interaction
+        .reply(format!(
+            "Channel: {}\nUser: {}",
+            channel.name,
+            user.mention()
+        ))
+        .await;
+
+    interaction.followup("This is a followup message").await;
+}
+
+#[slash(name = "echo", description = "Echoes the input")]
+async fn echo_slash(
+    interaction: Interaction,
+    /// The message to echo
+    message: String,
+) {
+    interaction.defer().await;
+    interaction.followup(message).await;
 }
 
 #[event]

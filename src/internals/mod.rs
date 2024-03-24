@@ -171,6 +171,8 @@ pub struct SlashCommand {
     pub description: String,
     pub fn_sig: Vec<ParamType>,
     pub handler_fn: SlashHandlerFn,
+    pub fn_param_names: Vec<String>,
+    pub fn_param_descriptions: Vec<String>,
 }
 
 impl SlashCommand {
