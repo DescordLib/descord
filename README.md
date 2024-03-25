@@ -20,8 +20,8 @@ async fn main() {
     client.login().await;
 }
 
-#[descord::command("ping")]
-async fn ping(data: MessageData) {
+#[descord::command]
+async fn ping(data: Message) {
     let clock = std::time::Instant::now();
     let msg = data.reply("Pong!").await;
     let latency = clock.elapsed().as_millis();
@@ -30,7 +30,7 @@ async fn ping(data: MessageData) {
 }
 
 // Event type will be inferred from function name
-#[descord::event_handler]
+#[descord::event]
 async fn ready(data: ReadyData) {
     println!(
         "Logged in as: {}#{}",
