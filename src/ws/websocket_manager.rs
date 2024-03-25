@@ -171,6 +171,11 @@ impl WsManager {
 
             Event::MessageUpdate => {
                 let message_data = MessageResponse::deserialize_json(&payload.raw_json).unwrap();
+
+                if let Some(cached_message) = MESSAGE_CACHE.lock().await.get_mut(&message_data.data.id) {
+                    *cached_message = message_data.data.clone();
+                }
+
                 message_data.data.into()
             }
 

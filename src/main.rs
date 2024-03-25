@@ -35,27 +35,18 @@ async fn ping(
     /// The user to mention, optional
     user: Option<User>
 ) {
-    println!("user: {:?}", user);
-    if let Some(user) = user {
-        interaction
-            .reply(
-                format!("Channel: {}, User: {}", channel.name, user.username),
-                false,
-            )
-            .await;
-        return;
-    } else {
-        interaction
-            .reply(
-                format!("Channel: {}", channel.name),
-                false,
-            )
-            .await;
-    }
+    interaction
+        .reply(format!("Hello, {:?}! You are in {}", user, channel.mention()), false)
+        .await
 }
 
-async fn auto_cmp(_value: String) -> Vec<String> {
-    vec!["thatmagicalcat".to_string(), "fireplank".to_string()]
+async fn auto_cmp(value: String) -> Vec<String> {
+    let options = vec!["fireplank", "wizard"];
+    options
+        .into_iter()
+        .filter(|o| o.starts_with(&value))
+        .map(|o| o.to_string())
+        .collect()
 }
 
 #[slash(name = "echo", description = "Echoes the input")]
