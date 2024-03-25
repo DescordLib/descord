@@ -378,6 +378,7 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
     let mut param_descriptions = vec![];
     let mut param_autocomplete = vec![];
     let mut param_renames = vec![];
+    let mut optional_params = vec![];
     let mut stmts: Vec<proc_macro2::TokenStream> = vec![];
 
     let stop = false;
@@ -434,11 +435,11 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
 
         let type_ = (*param.ty).clone();
 
-        let syn::Type::Path(path) = type_ else {
+        let syn::Type::Path(ref path) = type_ else {
             panic!("Expected a path found something else");
         };
 
-        let (name, ty) = match path
+        let (name, ty, optional) = match path
             .path
             .segments
             .last()
@@ -447,15 +448,36 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
             .to_string()
             .as_str()
         {
-            "String" => (type_path!(String, name), type_name!(String)),
-            "isize" => (type_path!(Int, name), type_name!(Int)),
-            "bool" => (type_path!(Bool, name), type_name!(Bool)),
-            "Channel" => (type_path!(Channel, name), type_name!(Channel)),
-            "User" => (type_path!(User, name), type_name!(User)),
-
+            "Option" => {
+                let mut inner_type = String::new();
+                match &path.path.segments.last().unwrap().arguments {
+                    syn::PathArguments::AngleBracketed(angle_bracketed_data) => {
+                        for arg in &angle_bracketed_data.args {
+                            if let syn::GenericArgument::Type(syn::Type::Path(type_path)) = arg {
+                                inner_type = type_path.path.segments.last().unwrap().ident.to_string();
+                            }
+                        }
+                    }
+                    _ => panic!("Expected AngleBracketed PathArguments"),
+                }
+                match inner_type.as_str() {
+                    "String" => (type_path!(String, name), type_name!(String), true),
+                    "isize" => (type_path!(Int, name), type_name!(Int), true),
+                    "bool" => (type_path!(Bool, name), type_name!(Bool), true),
+                    "Channel" => (type_path!(Channel, name), type_name!(Channel), true),
+                    "User" => (type_path!(User, name), type_name!(User), true),
+                    _ => panic!("Unsupported type"),
+                }
+            }
+            "String" => (type_path!(String, name), type_name!(String), false),
+            "isize" => (type_path!(Int, name), type_name!(Int), false),
+            "bool" => (type_path!(Bool, name), type_name!(Bool), false),
+            "Channel" => (type_path!(Channel, name), type_name!(Channel), false),
+            "User" => (type_path!(User, name), type_name!(User), false),
             _ => panic!("Unsupported type"),
         };
 
+        optional_params.push(optional);
         param_types.push(ty);
         stmts.push(quote! {
             let #name = args[#idx].clone() else { unreachable!() };
@@ -489,7 +511,7 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
                 fn_param_descriptions: vec![#(#param_descriptions.to_string()),*],
                 fn_param_renames: vec![#(#param_renames),*],
                 fn_param_autocomplete: vec![#(#param_autocomplete),*],
-
+                optional_params: vec![#(#optional_params),*],
                 handler_fn: f,
             }
         }

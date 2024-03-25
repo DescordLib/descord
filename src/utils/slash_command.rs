@@ -32,13 +32,14 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
             .zip(local_command.fn_param_renames.iter())
             .zip(local_command.fn_sig.iter())
             .zip(local_command.fn_param_descriptions.iter())
-            .map(|((((name, autocomplete), rename), type_), description)| {
+            .zip(local_command.optional_params.iter())
+            .map(|(((((name, autocomplete), rename), type_), description), optional)| {
                 let name = rename.as_ref().unwrap_or_else(|| name);
                 json::object! {
                     name: name.clone(),
                     description: description.clone(),
                     type: map_param_type_to_u32(type_),
-                    required: true,
+                    required: !optional,
                     autocomplete: autocomplete.is_some(),
                 }
             })
@@ -62,6 +63,11 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
                 .iter()
                 .map(|opt| opt.description.as_str())
                 .collect();
+
+            let registered_optionals = registered_options
+                .iter()
+                .map(|opt| !opt.required.unwrap_or(false))
+                .collect::<Vec<_>>();
 
             let registered_autocompletes = registered_options
                 .iter()
@@ -91,6 +97,7 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
                     .collect::<Vec<_>>()
                     != registered_types
                 || fn_param_autocompletes != registered_autocompletes
+                || local_command.optional_params != registered_optionals
             {
                 let response = send_request(
                     Method::PATCH,
@@ -111,6 +118,8 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
                     "Updated '{}' slash command, command id: {}",
                     local_command.name, registered_command.id,
                 );
+
+                slash_commands.insert(registered_command.id.clone(), local_command.clone());
             } else {
                 info!(
                     "No changes detected in '{}' slash command, command id: {}",

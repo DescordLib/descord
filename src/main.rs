@@ -32,17 +32,26 @@ async fn ping(
     interaction: Interaction,
     /// The channel to get info about
     channel: Channel,
-    /// The user to ping
-    user: User,
+    /// The user to mention, optional
+    user: Option<User>
 ) {
-    interaction
-        .reply(
-            format!("Channel: {}\nUser: {}", channel.name, user.mention()),
-            false,
-        )
-        .await;
-
-    interaction.followup("This is a followup message").await;
+    println!("user: {:?}", user);
+    if let Some(user) = user {
+        interaction
+            .reply(
+                format!("Channel: {}, User: {}", channel.name, user.username),
+                false,
+            )
+            .await;
+        return;
+    } else {
+        interaction
+            .reply(
+                format!("Channel: {}", channel.name),
+                false,
+            )
+            .await;
+    }
 }
 
 async fn auto_cmp(_value: String) -> Vec<String> {
