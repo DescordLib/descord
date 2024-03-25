@@ -1,0 +1,8 @@
+[package]
+name = "quickstart"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+descord = { version = "0.1.10", path = "../.." }
+tokio = { version = "1.36.0", features = ["net", "sync", "time", "rt", "rt-multi-thread", "tokio-macros", "macros"] }

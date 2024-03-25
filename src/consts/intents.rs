@@ -20,6 +20,7 @@ pub mod GatewayIntent {
     pub const AUTO_MODERATION_CONFIGURATION: u32 = 1 << 20;
     pub const AUTO_MODERATION_EXECUTION: u32 = 1 << 21;
 
+    /// Includes Guilds, Guild Messages, Guild Message Reactions and Direct Messages
     pub const NON_PRIVILEGED: u32 =
         GUILDS | GUILD_MESSAGES | GUILD_MESSAGE_REACTIONS | DIRECT_MESSAGES;
 
