@@ -9,6 +9,7 @@ use crate::utils::send_request;
 use nanoserde::{DeJson, SerJson};
 use reqwest::Method;
 
+use super::message_response::CreateMessageData;
 use super::{channel::Channel, message_response::Message, user::User};
 
 #[derive(DeJson, SerJson, Clone, Debug)]
@@ -27,6 +28,8 @@ pub struct Interaction {
     pub channel: Option<Channel>,
     pub channel_id: Option<String>,
     pub member: Option<Member>,
+
+    /// User object for the invoking user, if invoked in a DM
     pub user: Option<User>,
     pub token: String,
     pub message: Option<Message>,
@@ -37,16 +40,16 @@ pub struct Interaction {
 }
 
 impl Interaction {
-    pub async fn reply<S: AsRef<str>>(&self, response: S, ephemeral: bool) {
+    pub async fn reply(&self, response: impl Into<CreateMessageData>, ephemeral: bool) {
+        let mut message_data: CreateMessageData = response.into();
+        ephemeral.then(|| message_data.flags = Some(64));
+
         let response = InteractionResponse {
             type_: 4,
-            data: Some(InteractionResponseData {
-                content: Some(response.as_ref().to_string()),
-                flags: if ephemeral { Some(64) } else { None },
-                ..Default::default()
-            }),
+            data: Some(message_data),
         };
         let json_response = SerJson::serialize_json(&response);
+
         send_request(
             Method::POST,
             format!("interactions/{}/{}/callback", self.id, self.token).as_str(),
@@ -61,6 +64,7 @@ impl Interaction {
             data: None,
         };
         let json_response = SerJson::serialize_json(&response);
+
         send_request(
             Method::POST,
             format!("interactions/{}/{}/callback", self.id, self.token).as_str(),
@@ -176,15 +180,5 @@ pub struct InteractionAutoCompleteChoice {
 pub struct InteractionResponse {
     #[nserde(rename = "type")]
     pub type_: u32,
-    pub data: Option<InteractionResponseData>,
-}
-
-#[derive(DeJson, SerJson, Clone, Debug, Default)]
-pub struct InteractionResponseData {
-    pub tts: Option<bool>,
-    pub content: Option<String>,
-    pub embeds: Option<Vec<Embed>>,
-    pub allowed_mentions: Option<AllowedMentions>,
-    pub flags: Option<u32>,
-    pub components: Option<Vec<Component>>,
+    pub data: Option<CreateMessageData>,
 }

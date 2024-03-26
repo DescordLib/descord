@@ -4,6 +4,7 @@ use nanoserde::{DeJson, SerJson};
 use crate::utils;
 use crate::{consts, Client};
 
+use super::allowed_mentions::AllowedMentions;
 use super::channel::Channel;
 use super::components::Component;
 use super::message_edit::MessageEditData;
@@ -82,11 +83,13 @@ impl Message {
     }
 }
 
-#[derive(Default, Debug, SerJson)]
+#[derive(Default, Debug, DeJson, SerJson, Clone)]
 pub struct CreateMessageData {
     pub content: String,
     pub tts: bool,
     pub embeds: Vec<Embed>,
+    pub allowed_mentions: Option<AllowedMentions>,
+    pub flags: Option<u32>,
 
     /// Column<Row<Component>>
     pub components: Vec<Vec<Component>>,
@@ -142,6 +145,24 @@ impl From<Vec<Embed>> for CreateMessageData {
 
         CreateMessageData {
             embeds: value,
+            ..Default::default()
+        }
+    }
+}
+
+impl From<Embed> for CreateMessageData {
+    fn from(value: Embed) -> Self {
+        CreateMessageData {
+            embeds: vec![value],
+            ..Default::default()
+        }
+    }
+}
+
+impl From<AllowedMentions> for CreateMessageData {
+    fn from(value: AllowedMentions) -> Self {
+        CreateMessageData {
+            allowed_mentions: Some(value),
             ..Default::default()
         }
     }
