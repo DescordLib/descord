@@ -40,16 +40,18 @@ pub enum ParamType {
 #[derive(Debug, Clone)]
 pub enum Value {
     String(String),
-    StringOption(Option<String>),
     Int(isize),
-    IntOption(Option<isize>),
     Bool(bool),
-    BoolOption(Option<bool>),
     Channel(Channel),
-    ChannelOption(Option<Channel>),
     User(User),
-    UserOption(Option<User>),
     Args(Vec<String>),
+
+    StringOption(Option<String>),
+    IntOption(Option<isize>),
+    BoolOption(Option<bool>),
+    ChannelOption(Option<Channel>),
+    UserOption(Option<User>),
+
     None,
 }
 
@@ -187,10 +189,7 @@ pub struct SlashCommand {
     pub fn_param_names: Vec<String>,
     pub fn_param_descriptions: Vec<String>,
     pub optional_params: Vec<bool>,
-
-    // TODO: remove this and use `fn_param_names` field
     pub fn_param_renames: Vec<Option<String>>,
-
     pub fn_param_autocomplete: Vec<Option<AutoCompleteFn>>,
 }
 

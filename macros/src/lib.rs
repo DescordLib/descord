@@ -426,12 +426,14 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
             quote! { None }
         });
 
-        param_descriptions.push(
-            param_attr
-                .doc
-                .map(|i| i.trim().to_string())
-                .unwrap_or(String::new()),
-        );
+        let Some(doc) = param_attr.doc.map(|i| i.trim().to_string()) else {
+            return syn::Error::new(
+                name.ident.span(),
+                "Option description is expected but not provided, add it by using doc comments `///`"
+            ).into_compile_error().into();
+        };
+
+        param_descriptions.push(doc);
 
         let type_ = (*param.ty).clone();
 
@@ -454,18 +456,19 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
                     syn::PathArguments::AngleBracketed(angle_bracketed_data) => {
                         for arg in &angle_bracketed_data.args {
                             if let syn::GenericArgument::Type(syn::Type::Path(type_path)) = arg {
-                                inner_type = type_path.path.segments.last().unwrap().ident.to_string();
+                                inner_type =
+                                    type_path.path.segments.last().unwrap().ident.to_string();
                             }
                         }
                     }
                     _ => panic!("Expected AngleBracketed PathArguments"),
                 }
                 match inner_type.as_str() {
-                    "String" => (type_path!(String, name), type_name!(String), true),
-                    "isize" => (type_path!(Int, name), type_name!(Int), true),
-                    "bool" => (type_path!(Bool, name), type_name!(Bool), true),
-                    "Channel" => (type_path!(Channel, name), type_name!(Channel), true),
-                    "User" => (type_path!(User, name), type_name!(User), true),
+                    "String" => (type_path!(StringOption, name), type_name!(String), true),
+                    "isize" => (type_path!(IntOption, name), type_name!(Int), true),
+                    "bool" => (type_path!(BoolOption, name), type_name!(Bool), true),
+                    "Channel" => (type_path!(ChannelOption, name), type_name!(Channel), true),
+                    "User" => (type_path!(UserOption, name), type_name!(User), true),
                     _ => panic!("Unsupported type"),
                 }
             }
