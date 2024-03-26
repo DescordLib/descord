@@ -103,6 +103,7 @@ impl WsManager {
                 continue;
             };
 
+            info!("Opcode: {:?}", payload.operation_code);
             match payload.operation_code {
                 OpCode::Dispatch => {
                     info!(
@@ -292,15 +293,6 @@ impl WsManager {
                 .send(message)
                 .await
                 .expect("Failed to send heartbeat");
-
-            if last_sequence != 0 {
-                if let Some(Ok(Message::Text(response))) = reader.lock().await.next().await {
-                    let payload =
-                        Payload::parse(&response).expect("failed to parse response payload");
-
-                    println!("heartbeat ack payload: {payload:#?}");
-                }
-            }
 
             tokio::time::sleep(heartbeat_interval).await;
             last_sequence += 1;
