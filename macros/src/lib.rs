@@ -426,7 +426,7 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
         let attrs: Vec<_> = param
             .attrs
             .drain(..)
-            .map(|attr| darling::ast::NestedMeta::Meta(attr.meta))
+            .map(|attr| NestedMeta::Meta(attr.meta))
             .collect();
 
         let param_attr = match SlashOptionArgs::from_list(&attrs) {
@@ -450,17 +450,10 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
             quote! { None }
         });
 
-        let Some(doc) = param_attr.doc.map(|i| i.trim().to_string()) else {
-            return syn::Error::new(
-                name.ident.span(),
-                "Option description is expected but not provided, add it by using doc comments `///`"
-            ).into_compile_error().into();
-        };
-
+        let doc = param_attr.doc.map(|i| i.trim().to_string()).unwrap_or("...".to_string());
         param_descriptions.push(doc);
 
         let type_ = (*param.ty).clone();
-
         let syn::Type::Path(ref path) = type_ else {
             panic!("Expected a path found something else");
         };

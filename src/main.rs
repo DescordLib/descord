@@ -79,7 +79,6 @@ async fn auto_cmp(value: String) -> Vec<String> {
 #[slash(name = "echo", description = "Echoes the input")]
 async fn echo_slash(
     interaction: Interaction,
-    /// The message to echo
     #[autocomplete = auto_cmp]
     message: String,
 ) {
