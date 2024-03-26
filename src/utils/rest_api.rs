@@ -1,4 +1,4 @@
-use crate::cache::{RateLimitInfo, MESSAGE_CACHE, RATE_LIMITS};
+use crate::cache::{RateLimitInfo, MESSAGE_CACHE, RATE_LIMITS, ENDPOINT_BUCKET_MAP};
 use crate::client::TOKEN;
 use crate::consts::API;
 use std::collections::HashMap;
@@ -235,8 +235,10 @@ pub async fn request(method: Method, endpoint: &str, data: Option<JsonValue>) ->
         request_builder = request_builder.body(body.to_string());
     }
 
-    let bucket = endpoint.split('/').nth(2).unwrap_or_default();
-    wait_for_rate_limit(bucket).await;
+    let bucket = ENDPOINT_BUCKET_MAP.lock().await.get(endpoint).cloned();
+    if let Some(bucket) = bucket {
+        wait_for_rate_limit(&bucket).await;
+    }
 
     let mut response = request_builder.try_clone().unwrap().send().await.unwrap();
 
@@ -257,7 +259,12 @@ pub async fn request(method: Method, endpoint: &str, data: Option<JsonValue>) ->
     }
 
     if let Some(bucket) = response.headers().get("x-ratelimit-bucket") {
-        update_rate_limit_info(response.headers(), bucket.to_str().unwrap_or_default()).await;
+        let bucket = bucket.to_str().unwrap_or_default();
+        update_rate_limit_info(response.headers(), bucket).await;
+        ENDPOINT_BUCKET_MAP
+            .lock()
+            .await
+            .put(endpoint.to_string(), bucket.to_string());
     }
 
     response
