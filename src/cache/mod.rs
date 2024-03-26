@@ -8,7 +8,6 @@ use crate::prelude::Message;
 
 #[derive(Debug)]
 pub struct RateLimitInfo {
-    pub limit: u32,
     pub remaining: u32,
     pub reset: f64,
 }

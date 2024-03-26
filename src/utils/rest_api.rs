@@ -186,11 +186,6 @@ fn get_headers() -> HeaderMap {
 }
 
 async fn update_rate_limit_info(headers: &HeaderMap<HeaderValue>, bucket: &str) {
-    let limit = headers
-        .get("x-ratelimit-limit")
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.parse().ok())
-        .unwrap_or(0);
     let remaining = headers
         .get("x-ratelimit-remaining")
         .and_then(|v| v.to_str().ok())
@@ -203,7 +198,6 @@ async fn update_rate_limit_info(headers: &HeaderMap<HeaderValue>, bucket: &str) 
         .unwrap_or(0.0);
 
     let rate_limit_info = RateLimitInfo {
-        limit,
         remaining,
         reset,
     };
