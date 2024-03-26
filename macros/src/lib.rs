@@ -65,7 +65,6 @@ macro_rules! type_name {
     };
 }
 
-#[rustfmt::ignore]
 event_handler_args![
 //  event switch       => event type         : event data type
     ready              => Ready              : ReadyData,
@@ -215,7 +214,8 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
     };
 
     let mut param_types = vec![];
-    let mut stmts: Vec<proc_macro2::TokenStream> = vec![];
+    let mut stmts = vec![];
+    let mut optional_params = vec![];
 
     let mut stop = false;
     for (idx, param) in function_params.iter().skip(1).enumerate() {
@@ -238,7 +238,7 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
             panic!("Expected a path found something else");
         };
 
-        let (name, ty) = match path
+        let (name, ty, optional) = match path
             .path
             .segments
             .last()
@@ -247,19 +247,42 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
             .to_string()
             .as_str()
         {
-            "String" => (type_path!(String, name), type_name!(String)),
-            "isize" => (type_path!(Int, name), type_name!(Int)),
-            "bool" => (type_path!(Bool, name), type_name!(Bool)),
-            "Channel" => (type_path!(Channel, name), type_name!(Channel)),
-            "User" => (type_path!(User, name), type_name!(User)),
+            "Option" => {
+                let mut inner_type = String::new();
+                match &path.path.segments.last().unwrap().arguments {
+                    syn::PathArguments::AngleBracketed(angle_bracketed_data) => {
+                        for arg in &angle_bracketed_data.args {
+                            if let syn::GenericArgument::Type(syn::Type::Path(type_path)) = arg {
+                                inner_type =
+                                    type_path.path.segments.last().unwrap().ident.to_string();
+                            }
+                        }
+                    }
+                    _ => panic!("Expected AngleBracketed PathArguments"),
+                }
+                match inner_type.as_str() {
+                    "String" => (type_path!(StringOption, name), type_name!(String), true),
+                    "isize" => (type_path!(IntOption, name), type_name!(Int), true),
+                    "bool" => (type_path!(BoolOption, name), type_name!(Bool), true),
+                    "Channel" => (type_path!(ChannelOption, name), type_name!(Channel), true),
+                    "User" => (type_path!(UserOption, name), type_name!(User), true),
+                    _ => panic!("Unsupported type"),
+                }
+            }
+            "String" => (type_path!(String, name), type_name!(String), false),
+            "isize" => (type_path!(Int, name), type_name!(Int), false),
+            "bool" => (type_path!(Bool, name), type_name!(Bool), false),
+            "Channel" => (type_path!(Channel, name), type_name!(Channel), false),
+            "User" => (type_path!(User, name), type_name!(User), false),
             "Args" => {
                 stop = true; // will stop the loop from running again
-                (type_path!(Args, name), type_name!(Args))
+                (type_path!(Args, name), type_name!(Args), false)
             }
 
             _ => panic!("Unsupported type"),
         };
 
+        optional_params.push(optional);
         param_types.push(ty);
         stmts.push(quote! {
             let #name = args[#idx].clone() else { unreachable!() };
@@ -290,6 +313,7 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
                 fn_sig: vec![#(#param_types),*],
                 handler_fn: f,
                 custom_prefix: #custom_prefix,
+                optional_params: vec![#(#optional_params),*],
             }
         }
     };
@@ -402,7 +426,7 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
         let attrs: Vec<_> = param
             .attrs
             .drain(..)
-            .map(|attr| darling::ast::NestedMeta::Meta(attr.meta))
+            .map(|attr| NestedMeta::Meta(attr.meta))
             .collect();
 
         let param_attr = match SlashOptionArgs::from_list(&attrs) {
@@ -426,17 +450,13 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
             quote! { None }
         });
 
-        let Some(doc) = param_attr.doc.map(|i| i.trim().to_string()) else {
-            return syn::Error::new(
-                name.ident.span(),
-                "Option description is expected but not provided, add it by using doc comments `///`"
-            ).into_compile_error().into();
-        };
-
+        let doc = param_attr
+            .doc
+            .map(|i| i.trim().to_string())
+            .unwrap_or("...".to_string());
         param_descriptions.push(doc);
 
         let type_ = (*param.ty).clone();
-
         let syn::Type::Path(ref path) = type_ else {
             panic!("Expected a path found something else");
         };

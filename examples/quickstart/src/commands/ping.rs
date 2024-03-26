@@ -12,4 +12,3 @@ pub async fn ping(message: Message) {
         ))
         .await;
 }
-
