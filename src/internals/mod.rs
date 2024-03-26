@@ -66,20 +66,25 @@ implemented_enum! {
     }
 }
 
-pub type HandlerFn =
-    fn(
-        Message,
-        Vec<Value>,
-    ) -> std::pin::Pin<Box<dyn futures_util::Future<Output = ()> + Send + 'static>>;
+pub type HandlerFn = fn(
+    Message,
+    Vec<Value>,
+) -> std::pin::Pin<
+    Box<dyn futures_util::Future<Output = Result<(), Box<dyn std::error::Error>>> + Send + 'static>,
+>;
 
-pub type SlashHandlerFn =
-    fn(
-        Interaction,
-        Vec<Value>,
-    ) -> std::pin::Pin<Box<dyn futures_util::Future<Output = ()> + Send + 'static>>;
+pub type SlashHandlerFn = fn(
+    Interaction,
+    Vec<Value>,
+) -> std::pin::Pin<
+    Box<dyn futures_util::Future<Output = Result<(), Box<dyn std::error::Error>>> + Send + 'static>,
+>;
 
-pub type EventHandlerFn =
-    fn(HandlerValue) -> std::pin::Pin<Box<dyn futures_util::Future<Output = ()> + Send + 'static>>;
+pub type EventHandlerFn = fn(
+    HandlerValue,
+) -> std::pin::Pin<
+    Box<dyn futures_util::Future<Output = Result<(), Box<dyn std::error::Error>>> + Send + 'static>,
+>;
 
 #[derive(Debug, Clone)]
 pub struct EventHandler {
@@ -88,11 +93,16 @@ pub struct EventHandler {
 }
 
 impl EventHandler {
-    pub async fn call(&self, data: HandlerValue) {
+    pub async fn call(&self, data: HandlerValue) -> DescordResult {
         let fut = ((self.handler_fn)(data));
-        let boxed_fut: std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'static>> =
-            Box::pin(fut);
-        boxed_fut.await;
+        let boxed_fut: std::pin::Pin<
+            Box<
+                dyn std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>
+                    + Send
+                    + 'static,
+            >,
+        > = Box::pin(fut);
+        boxed_fut.await
     }
 }
 
@@ -106,7 +116,7 @@ pub struct Command {
 }
 
 impl Command {
-    pub async fn call(&self, data: Message) {
+    pub async fn call(&self, data: Message) -> DescordResult {
         let re = regex::Regex::new(r#"([^"\s']+)|"([^"]*)"|'([^']*)'"#).unwrap();
         let split: Vec<String> = re
             .captures_iter(&data.content)
@@ -203,9 +213,14 @@ impl Command {
         }
 
         let fut = ((self.handler_fn)(data, args));
-        let boxed_fut: std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'static>> =
-            Box::pin(fut);
-        boxed_fut.await;
+        let boxed_fut: std::pin::Pin<
+            Box<
+                dyn std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>
+                    + Send
+                    + 'static,
+            >,
+        > = Box::pin(fut);
+        boxed_fut.await
     }
 }
 
@@ -228,7 +243,7 @@ pub struct SlashCommand {
 }
 
 impl SlashCommand {
-    pub async fn call(&self, data: Interaction) {
+    pub async fn call(&self, data: Interaction) -> DescordResult {
         let split: Vec<String> = data
             .clone()
             .data
@@ -324,8 +339,13 @@ impl SlashCommand {
         }
 
         let fut = ((self.handler_fn)(data, args));
-        let boxed_fut: std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'static>> =
-            Box::pin(fut);
-        boxed_fut.await;
+        let boxed_fut: std::pin::Pin<
+            Box<
+                dyn std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>
+                    + Send
+                    + 'static,
+            >,
+        > = Box::pin(fut);
+        boxed_fut.await
     }
 }

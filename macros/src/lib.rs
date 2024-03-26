@@ -5,6 +5,31 @@ use quote::quote;
 use syn::parse::{Parse, ParseStream};
 use syn::{parse_macro_input, ExprArray, Ident, ItemFn, Token};
 
+macro_rules! check_return_type {
+    [ $function:expr, $ret_ty:ident ] => {
+        let ret_ty = stringify!($ret_ty);
+        let error = || -> ! { panic!("Function return type should be `{ret_ty}`") };
+        match $function.sig.output {
+            syn::ReturnType::Type(_, ret_type) => match *ret_type {
+                syn::Type::Path(ref path)
+                    if path
+                        .path
+                        .segments
+                        .last()
+                        .unwrap()
+                        .ident
+                        .to_string()
+                        .as_str()
+                        == ret_ty => {}
+
+                _ => error(),
+            },
+
+            _ => error(),
+        }
+    };
+}
+
 macro_rules! event_handler_args {
     [ $($event_name:ident => $event_ty:ident:$arg_type:ident),* $(,)? ] => {
         #[allow(dead_code)]
@@ -96,6 +121,8 @@ pub fn event(args: TokenStream, input: TokenStream) -> TokenStream {
         panic!("Expected only one parameter");
     }
 
+    check_return_type!(function, DescordResult);
+
     let param_name = match function.sig.inputs.first().unwrap() {
         syn::FnArg::Typed(x) => match *x.pat {
             syn::Pat::Ident(ref ident) => quote! { #ident },
@@ -137,7 +164,7 @@ pub fn event(args: TokenStream, input: TokenStream) -> TokenStream {
 
             fn f(
                 data: descord::internals::HandlerValue
-            ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'static>> {
+            ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), Box<dyn std::error::Error>>> + Send + 'static>> {
                 Box::pin(async move {
                     #let_stmt
                     #function_body
@@ -161,6 +188,8 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
     if function.sig.asyncness.is_none() {
         panic!("Function marked with `#[descord::command(...)]` should be async");
     }
+
+    check_return_type!(function, DescordResult);
 
     let attr_args = match NestedMeta::parse_meta_list(args.into()) {
         Ok(v) => v,
@@ -299,7 +328,7 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
             fn f(
                 #first_param_name: Message,
                 args: Vec<internals::Value>
-            ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'static>> {
+            ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), Box<dyn std::error::Error>>> + Send + 'static>> {
                 Box::pin(async move {
                     #let_stmts
                     drop(args);
@@ -345,6 +374,8 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
     if function.sig.asyncness.is_none() {
         panic!("Function marked with `#[descord::slash(...)]` should be async");
     }
+
+    check_return_type!(function, DescordResult);
 
     let attr_args = match NestedMeta::parse_meta_list(args.into()) {
         Ok(v) => v,
@@ -517,7 +548,7 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
             fn f(
                 #first_param_name: descord::models::interaction::Interaction,
                 args: Vec<internals::Value>
-            ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'static>> {
+            ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), Box<dyn std::error::Error>>> + Send + 'static>> {
                 Box::pin(async move {
                     #let_stmts
                     drop(args);

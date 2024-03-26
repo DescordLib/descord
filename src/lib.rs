@@ -16,6 +16,9 @@ pub use handlers::events::Event;
 pub use ws::payload::Payload;
 pub mod internals;
 
+// TODO: change the error type
+pub type DescordResult = Result<(), Box<dyn std::error::Error>>;
+
 pub(crate) mod cache;
 
 pub mod prelude {
