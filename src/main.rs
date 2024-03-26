@@ -35,12 +35,36 @@ async fn ping(
     /// The user to mention, optional
     user: Option<User>,
 ) {
-    interaction
-        .reply(
-            format!("Hello, {:?}! You are in {}", user, channel.mention()),
-            false,
-        )
-        .await
+    if let Some(user) = user {
+        interaction
+            .reply(
+                format!(
+                    "Hello, {}! You are in {}",
+                    user.mention(),
+                    channel.mention()
+                ),
+                false,
+            )
+            .await;
+    } else {
+        interaction
+            .reply(format!("You are in {}", channel.mention()), false)
+            .await;
+    }
+}
+
+#[command(name = "info")]
+async fn info(msg: Message, channel: Channel, user: Option<User>) {
+    if let Some(user) = user {
+        msg.reply(format!(
+            "Hello, {}! You are in {}",
+            user.mention(),
+            channel.mention()
+        ))
+        .await;
+    } else {
+        msg.reply(format!("You are in {}", channel.mention())).await;
+    }
 }
 
 async fn auto_cmp(value: String) -> Vec<String> {

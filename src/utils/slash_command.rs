@@ -33,16 +33,18 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
             .zip(local_command.fn_sig.iter())
             .zip(local_command.fn_param_descriptions.iter())
             .zip(local_command.optional_params.iter())
-            .map(|(((((name, autocomplete), rename), type_), description), optional)| {
-                let name = rename.as_ref().unwrap_or_else(|| name);
-                json::object! {
-                    name: name.clone(),
-                    description: description.clone(),
-                    type: map_param_type_to_u32(type_),
-                    required: !optional,
-                    autocomplete: autocomplete.is_some(),
-                }
-            })
+            .map(
+                |(((((name, autocomplete), rename), type_), description), optional)| {
+                    let name = rename.as_ref().unwrap_or_else(|| name);
+                    json::object! {
+                        name: name.clone(),
+                        description: description.clone(),
+                        type: map_param_type_to_u32(type_),
+                        required: !optional,
+                        autocomplete: autocomplete.is_some(),
+                    }
+                },
+            )
             .collect::<Vec<_>>();
 
         // If the command exists in the fetched commands

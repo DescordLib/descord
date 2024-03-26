@@ -1,5 +1,5 @@
-mod ping;
 mod echo;
+mod ping;
 
-pub use ping::*;
 pub use echo::*;
+pub use ping::*;
