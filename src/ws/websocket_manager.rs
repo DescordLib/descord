@@ -83,6 +83,8 @@ impl WsManager {
                     let writer = Arc::clone(&self.socket.0);
                     let reader = Arc::clone(&self.socket.1);
 
+                    info!("heartbeat interval: {}ms", time_ms);
+
                     tokio::spawn(async move {
                         Self::heartbeat_start(Duration::from_millis(time_ms), writer, reader).await;
                     });
@@ -172,7 +174,9 @@ impl WsManager {
             Event::MessageUpdate => {
                 let message_data = MessageResponse::deserialize_json(&payload.raw_json).unwrap();
 
-                if let Some(cached_message) = MESSAGE_CACHE.lock().await.get_mut(&message_data.data.id) {
+                if let Some(cached_message) =
+                    MESSAGE_CACHE.lock().await.get_mut(&message_data.data.id)
+                {
                     *cached_message = message_data.data.clone();
                 }
 
@@ -225,7 +229,8 @@ impl WsManager {
 
                     for (idx, itm) in options.iter().enumerate() {
                         if itm.focused.unwrap_or(false) {
-                            // SAFETY: we know that the fn_param_autocomplete is Some
+                            // SAFETY: this block will only be ran when `fn_param_autocomplete` is some,
+                            // so it is safe to unwrap
                             let choices = slash_command.fn_param_autocomplete[idx].unwrap()(
                                 itm.value.clone(),
                             )
@@ -243,12 +248,13 @@ impl WsManager {
                                     "/interactions/{}/{}/callback",
                                     data.data.id, data.data.token
                                 ),
-                                Some(json::parse(&InteractionAutoCompleteChoices {
-                                    type_: InteractionCallbackType::ApplicationCommandAutocompleteResult as _,
-                                    data: Some(InteractionAutoCompleteChoicePlaceholder {
-                                        choices
-                                    })
-                                }.serialize_json()).unwrap()),
+                                Some(
+                                    json::parse(
+                                        &InteractionAutoCompleteChoices::new(choices)
+                                            .serialize_json(),
+                                    )
+                                    .unwrap(),
+                                ),
                             )
                             .await;
                         }
@@ -286,6 +292,15 @@ impl WsManager {
                 .send(message)
                 .await
                 .expect("Failed to send heartbeat");
+
+            if last_sequence != 0 {
+                if let Some(Ok(Message::Text(response))) = reader.lock().await.next().await {
+                    let payload =
+                        Payload::parse(&response).expect("failed to parse response payload");
+
+                    println!("heartbeat ack payload: {payload:#?}");
+                }
+            }
 
             tokio::time::sleep(heartbeat_interval).await;
             last_sequence += 1;

@@ -76,6 +76,10 @@ impl Client {
     }
 
     pub fn register_commands(&mut self, commands: Vec<Command>) {
+        if self.intents & GatewayIntent::MESSAGE_CONTENT == 0 {
+            log::error!("MESSAGE_CONTENT intent is required for message commands to work");
+        }
+
         commands.into_iter().for_each(|mut command| {
             // if a custom prefix is not applied, add the default prefix
             if !command.custom_prefix {

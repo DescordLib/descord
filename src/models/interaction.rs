@@ -152,6 +152,15 @@ pub struct InteractionAutoCompleteChoices {
     pub data: Option<InteractionAutoCompleteChoicePlaceholder>,
 }
 
+impl InteractionAutoCompleteChoices {
+    pub fn new(choices: Vec<InteractionAutoCompleteChoice>) -> Self {
+        Self {
+            type_: InteractionCallbackType::ApplicationCommandAutocompleteResult as _,
+            data: Some(InteractionAutoCompleteChoicePlaceholder { choices }),
+        }
+    }
+}
+
 #[derive(DeJson, SerJson, Clone, Debug, Default)]
 pub struct InteractionAutoCompleteChoicePlaceholder {
     pub choices: Vec<InteractionAutoCompleteChoice>,
