@@ -450,7 +450,10 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
             quote! { None }
         });
 
-        let doc = param_attr.doc.map(|i| i.trim().to_string()).unwrap_or("...".to_string());
+        let doc = param_attr
+            .doc
+            .map(|i| i.trim().to_string())
+            .unwrap_or("...".to_string());
         param_descriptions.push(doc);
 
         let type_ = (*param.ty).clone();

@@ -10,7 +10,7 @@ use crate::consts::intents::GatewayIntent;
 use crate::internals::{EventHandler, *};
 use crate::models::application_command::ApplicationCommandOption;
 use crate::prelude::{CreateMessageData, Message};
-use crate::utils::{self, send_request};
+use crate::utils::{self, request};
 use crate::ws::WsManager;
 use crate::{consts, internals, Event};
 

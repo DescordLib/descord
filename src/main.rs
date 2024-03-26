@@ -1,23 +1,12 @@
 use descord::prelude::*;
-use tokio::sync::Mutex;
-
-lazy_static::lazy_static! {
-    static ref BOT_ID: Mutex<String> = Mutex::new(String::new());
-}
 
 #[tokio::main]
 async fn main() {
-    dotenvy::dotenv().unwrap_or_else(|_| {
-        eprintln!("Failed to load .env file");
-        std::process::exit(1);
-    });
+    dotenvy::dotenv().ok();
     env_logger::init();
 
     let mut client = Client::new(
-        &std::env::var("DISCORD_TOKEN").unwrap_or_else(|_| {
-            eprintln!("DISCORD_TOKEN not found in .env file");
-            std::process::exit(1);
-        }),
+        &std::env::var("DISCORD_TOKEN").expect("Expected a token in the environment"),
         GatewayIntent::ALL,
         "!",
     )
@@ -77,11 +66,7 @@ async fn auto_cmp(value: String) -> Vec<String> {
 }
 
 #[slash(name = "echo", description = "Echoes the input")]
-async fn echo_slash(
-    interaction: Interaction,
-    #[autocomplete = auto_cmp]
-    message: String,
-) {
+async fn echo_slash(interaction: Interaction, #[autocomplete = auto_cmp] message: String) {
     interaction.defer().await;
     interaction.followup(message).await;
 }
@@ -120,7 +105,8 @@ async fn echo(msg: Message, stuff: Args) {
 
 #[command(name = "channel")]
 async fn channel(msg: Message, channel: Channel) {
-    msg.reply(format!("Channel: {}", channel.name)).await;
+    msg.reply(format!("Channel: {}", channel.clone().name.unwrap()))
+        .await;
 }
 
 #[command(name = "user")]
@@ -198,13 +184,11 @@ async fn ready(data: ReadyData) {
         "Logged in as: {}#{}",
         data.user.username, data.user.discriminator
     );
-
-    *BOT_ID.lock().await = data.user.id.into();
 }
 
 #[event]
 async fn reaction_add(reaction: Reaction) {
-    if &reaction.user_id == BOT_ID.lock().await.as_str() {
+    if reaction.member.clone().unwrap().user.unwrap().bot {
         return;
     }
 

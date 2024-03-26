@@ -101,7 +101,7 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
                 || fn_param_autocompletes != registered_autocompletes
                 || local_command.optional_params != registered_optionals
             {
-                let response = send_request(
+                let response = request(
                     Method::PATCH,
                     format!("applications/{}/commands/{}", bot_id, registered_command.id).as_str(),
                     Some(json::object! {
@@ -111,7 +111,6 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
                     }),
                 )
                 .await
-                .unwrap()
                 .text()
                 .await
                 .unwrap();
@@ -132,7 +131,7 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
             }
         } else {
             // If the command does not exist in the fetched commands, register it
-            let response = send_request(
+            let response = request(
                 Method::POST,
                 format!("applications/{}/commands", bot_id).as_str(),
                 Some(json::object! {
@@ -142,7 +141,6 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
                 }),
             )
             .await
-            .unwrap()
             .text()
             .await
             .unwrap();
@@ -168,13 +166,12 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
             .find(|&cmd| cmd.name == registered_command.name)
             .is_none()
         {
-            send_request(
+            request(
                 Method::DELETE,
                 format!("applications/{}/commands/{}", bot_id, registered_command.id).as_str(),
                 None,
             )
-            .await
-            .unwrap();
+            .await;
 
             info!(
                 "Removed slash command '{}', command id: {}",

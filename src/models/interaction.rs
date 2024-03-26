@@ -5,7 +5,7 @@ use crate::consts::*;
 use crate::models::allowed_mentions::AllowedMentions;
 use crate::models::guild::Member;
 use crate::prelude::{Component, Embed};
-use crate::utils::send_request;
+use crate::utils::request;
 use nanoserde::{DeJson, SerJson};
 use reqwest::Method;
 
@@ -50,7 +50,7 @@ impl Interaction {
         };
         let json_response = SerJson::serialize_json(&response);
 
-        send_request(
+        request(
             Method::POST,
             format!("interactions/{}/{}/callback", self.id, self.token).as_str(),
             Some(JsonValue::from(json_response)),
@@ -65,7 +65,7 @@ impl Interaction {
         };
         let json_response = SerJson::serialize_json(&response);
 
-        send_request(
+        request(
             Method::POST,
             format!("interactions/{}/{}/callback", self.id, self.token).as_str(),
             Some(JsonValue::from(json_response)),
@@ -74,7 +74,7 @@ impl Interaction {
     }
 
     pub async fn followup<S: AsRef<str>>(&self, response: S) {
-        send_request(
+        request(
             Method::POST,
             format!("webhooks/{}/{}", self.application_id, self.token).as_str(),
             Some(json::object! {
@@ -85,7 +85,7 @@ impl Interaction {
     }
 
     pub async fn edit_original<S: AsRef<str>>(&self, response: S) {
-        send_request(
+        request(
             Method::PATCH,
             format!(
                 "webhooks/{}/{}/messages/@original",
@@ -100,7 +100,7 @@ impl Interaction {
     }
 
     pub async fn delete_original(&self) {
-        send_request(
+        request(
             Method::DELETE,
             format!(
                 "webhooks/{}/{}/messages/@original",

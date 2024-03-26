@@ -275,7 +275,8 @@ impl SlashCommand {
                             } else {
                                 Value::Channel(channel)
                             }),
-                            Err(_) => {
+                            Err(e) => {
+                                log::error!("{:?}", e);
                                 if !optional {
                                     panic!("Channel not found")
                                 }
@@ -296,7 +297,8 @@ impl SlashCommand {
                             } else {
                                 Value::User(user)
                             }),
-                            Err(_) => {
+                            Err(e) => {
+                                log::error!("{:?}", e);
                                 if !optional {
                                     panic!("User not found")
                                 }

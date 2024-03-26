@@ -6,14 +6,14 @@ use super::message_response::{CreateMessageData, Message};
 #[derive(DeJson, SerJson, Debug, Clone)]
 pub struct Channel {
     pub last_message_id: Option<String>,
-    pub flags: usize,
+    pub flags: Option<usize>,
     pub guild_id: Option<String>,
     pub parent_id: Option<String>,
     pub topic: Option<String>,
     pub rate_limit_per_user: Option<usize>,
-    pub position: u32,
+    pub position: Option<usize>,
     pub nsfw: Option<bool>,
-    pub name: String,
+    pub name: Option<String>,
     pub id: String,
 
     #[nserde(rename = "type")]

@@ -12,7 +12,7 @@ use crate::models::interaction::{
 };
 use crate::models::ready_response::ReadyResponse;
 use crate::models::*;
-use crate::utils::send_request;
+use crate::utils::request;
 use deleted_message_response::DeletedMessageResponse;
 use message_response::MessageResponse;
 use reaction_response::ReactionResponse;
@@ -174,11 +174,10 @@ impl WsManager {
             Event::MessageUpdate => {
                 let message_data = MessageResponse::deserialize_json(&payload.raw_json).unwrap();
 
-                if let Some(cached_message) =
-                    MESSAGE_CACHE.lock().await.get_mut(&message_data.data.id)
-                {
-                    *cached_message = message_data.data.clone();
-                }
+                MESSAGE_CACHE
+                    .lock()
+                    .await
+                    .put(message_data.data.id.clone(), message_data.data.clone());
 
                 message_data.data.into()
             }
@@ -229,8 +228,7 @@ impl WsManager {
 
                     for (idx, itm) in options.iter().enumerate() {
                         if itm.focused.unwrap_or(false) {
-                            // SAFETY: this block will only be ran when `fn_param_autocomplete` is some,
-                            // so it is safe to unwrap
+                            // SAFETY: We are sure that the fn_param_autocomplete is not None
                             let choices = slash_command.fn_param_autocomplete[idx].unwrap()(
                                 itm.value.clone(),
                             )
@@ -242,7 +240,7 @@ impl WsManager {
                             })
                             .collect();
 
-                            send_request(
+                            request(
                                 Method::POST,
                                 &format!(
                                     "/interactions/{}/{}/callback",
@@ -298,7 +296,7 @@ impl WsManager {
                     let payload =
                         Payload::parse(&response).expect("failed to parse response payload");
 
-                    println!("heartbeat ack payload: {payload:#?}");
+                    // println!("heartbeat ack payload: {payload:#?}");
                 }
             }
 

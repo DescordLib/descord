@@ -1,6 +1,8 @@
-use crate::cache::MESSAGE_CACHE;
+use crate::cache::{RateLimitInfo, MESSAGE_CACHE, RATE_LIMITS};
 use crate::client::TOKEN;
 use crate::consts::API;
+use std::collections::HashMap;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use crate::models::application_command::ApplicationCommand;
 use crate::models::channel::Channel;
@@ -14,19 +16,17 @@ use crate::prelude::User;
 use futures_util::TryFutureExt;
 use json::{object, JsonValue};
 use nanoserde::{DeJson, SerJson};
-use reqwest::{header::HeaderMap, Response, StatusCode};
-use reqwest::{Client, Method};
-
-// TODO: Error checking in each function
+use reqwest::header::HeaderValue;
+use reqwest::{header::HeaderMap, Client, Error, Method, Response, StatusCode};
+use tokio::time::sleep;
 
 pub async fn fetch_application_commands(bot_id: &str) -> Vec<ApplicationCommand> {
-    let resp = send_request(
+    let resp = request(
         Method::GET,
         format!("applications/{}/commands", bot_id).as_str(),
         None,
     )
     .await
-    .unwrap()
     .text()
     .await
     .unwrap();
@@ -38,10 +38,10 @@ pub async fn fetch_application_commands(bot_id: &str) -> Vec<ApplicationCommand>
 }
 
 pub async fn get_bot_id() -> String {
-    let response = send_request(Method::GET, "users/@me", None).await;
-    json::parse(response.unwrap().text().await.unwrap().as_str()).unwrap_or_else(|_| {
+    let response = request(Method::GET, "users/@me", None).await;
+    json::parse(response.text().await.unwrap().as_str()).unwrap_or_else(|_| {
         log::error!("Failed to parse JSON response");
-        json::JsonValue::Null
+        JsonValue::Null
     })["id"]
         .as_str()
         .unwrap_or_else(|| {
@@ -55,15 +55,10 @@ pub async fn send(channel_id: &str, data: impl Into<CreateMessageData>) -> Messa
     let data: CreateMessageData = data.into();
     let body = data.to_json();
 
-    let url = format!("{API}/channels/{channel_id}/messages");
+    let url = format!("channels/{channel_id}/messages");
 
-    let resp = Client::new()
-        .post(url)
-        .body(body)
-        .headers(get_headers())
-        .send()
+    let resp = request(Method::POST, &url, Some(json::parse(&body).unwrap()))
         .await
-        .expect("Failed to send http request")
         .text()
         .await
         .unwrap();
@@ -85,15 +80,10 @@ pub async fn reply(
         },
     );
 
-    let url = format!("{API}/channels/{channel_id}/messages",);
+    let url = format!("channels/{channel_id}/messages",);
 
-    let resp = Client::new()
-        .post(url)
-        .body(json::stringify(body))
-        .headers(get_headers())
-        .send()
+    let resp = request(Method::POST, &url, Some(body))
         .await
-        .expect("Failed to send http request")
         .text()
         .await
         .unwrap();
@@ -102,61 +92,47 @@ pub async fn reply(
 }
 
 pub async fn get_channel(channel_id: &str) -> Result<Channel, Box<dyn std::error::Error>> {
-    let url = format!("{API}/channels/{channel_id}");
-    let resp = Client::new().get(url).headers(get_headers()).send().await?;
-    Ok(Channel::deserialize_json(&resp.text().await?)?)
+    let url = format!("channels/{channel_id}");
+    let resp = request(Method::GET, &url, None).await.text().await?;
+    Ok(Channel::deserialize_json(&resp)?)
 }
 
 pub async fn get_user(user_id: &str) -> Result<User, Box<dyn std::error::Error>> {
-    let url = format!("{API}/users/{user_id}");
-    let resp = Client::new().get(url).headers(get_headers()).send().await?;
+    let url = format!("users/{user_id}");
+    let resp = request(Method::GET, &url, None).await;
     Ok(User::deserialize_json(&resp.text().await?)?)
 }
 
 /// Returns true if the operation was successful, false otherwise.
 /// This function requires the MANAGE_MESSAGES permission.
 pub async fn delete_message(channel_id: &str, message_id: &str) -> bool {
-    let url = format!("{API}/channels/{channel_id}/messages/{message_id}");
+    let url = format!("channels/{channel_id}/messages/{message_id}");
 
-    let resp = Client::new()
-        .delete(url)
-        .headers(get_headers())
-        .send()
-        .await
-        .unwrap();
-
+    let resp = request(Method::DELETE, &url, None).await;
     resp.status() == StatusCode::NO_CONTENT
 }
 
 pub async fn edit_message(channel_id: &str, message_id: &str, data: impl Into<MessageEditData>) {
-    let url = format!("{API}/channels/{channel_id}/messages/{message_id}");
+    let url = format!("channels/{channel_id}/messages/{message_id}");
     let data: MessageEditData = data.into();
 
-    Client::new()
-        .patch(url)
-        .body(data.serialize_json())
-        .headers(get_headers())
-        .send()
-        .await
-        .unwrap();
+    request(
+        Method::PATCH,
+        &url,
+        Some(json::parse(&data.serialize_json()).unwrap()),
+    )
+    .await;
 }
 
 /// Returns a new DM channel with a user (or return
 /// an existing one). Returns a `DirectMessageChannel` object.
 pub async fn get_dm(user_id: &str) -> DirectMessageChannel {
-    let url = format!("{API}/users/@me/channels");
+    let url = format!("users/@me/channels");
     let data = json::stringify(object! {
         recipient_id: user_id
     });
 
-    let response = Client::new()
-        .post(url)
-        .body(data)
-        .headers(get_headers())
-        .send()
-        .await
-        .unwrap();
-
+    let response = request(Method::POST, &url, Some(json::parse(&data).unwrap())).await;
     DirectMessageChannel::deserialize_json(&response.text().await.unwrap()).unwrap()
 }
 
@@ -167,30 +143,20 @@ pub async fn send_dm(user_id: &str, data: impl Into<CreateMessageData>) {
 
 pub async fn remove_reaction(channel_id: &str, message_id: &str, user_id: &str, emoji: &str) {
     let url = format!(
-        "{API}/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/{user_id}",
+        "channels/{channel_id}/messages/{message_id}/reactions/{emoji}/{user_id}",
         emoji = urlencoding::encode(emoji)
     );
 
-    Client::new()
-        .delete(url)
-        .headers(get_headers())
-        .send()
-        .await
-        .unwrap();
+    request(Method::DELETE, &url, None).await;
 }
 
 pub async fn react(channel_id: &str, message_id: &str, emoji: &str) {
     let url = format!(
-        "{API}/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me",
+        "channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me",
         emoji = emoji.trim_matches(['<', '>', ':'])
     );
 
-    Client::new()
-        .put(url)
-        .headers(get_headers())
-        .send()
-        .await
-        .unwrap();
+    request(Method::PUT, &url, None).await;
 }
 
 pub async fn get_message(channel_id: &str, message_id: &str) -> Message {
@@ -198,17 +164,9 @@ pub async fn get_message(channel_id: &str, message_id: &str) -> Message {
         return message;
     }
 
-    let url = format!("{API}/channels/{channel_id}/messages/{message_id}");
+    let url = format!("channels/{channel_id}/messages/{message_id}");
 
-    let resp = Client::new()
-        .get(url)
-        .headers(get_headers())
-        .send()
-        .await
-        .unwrap()
-        .text()
-        .await
-        .unwrap();
+    let resp = request(Method::GET, &url, None).await.text().await.unwrap();
 
     Message::deserialize_json(&resp).unwrap()
 }
@@ -227,13 +185,48 @@ fn get_headers() -> HeaderMap {
     map
 }
 
-pub async fn send_request(
-    method: Method,
-    endpoint: &str,
-    data: Option<JsonValue>,
-) -> Result<Response, reqwest::Error> {
+fn parse_header(headers: &HeaderMap<HeaderValue>, header_name: &str) -> u64 {
+    headers
+        .get(header_name)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(0)
+}
+
+async fn update_rate_limit_info(headers: &HeaderMap<HeaderValue>, bucket: &str) {
+    let limit = parse_header(headers, "x-ratelimit-limit");
+    let remaining = parse_header(headers, "x-ratelimit-remaining");
+    let reset = parse_header(headers, "x-ratelimit-reset");
+
+    let rate_limit_info = RateLimitInfo {
+        limit,
+        remaining,
+        reset,
+    };
+
+    RATE_LIMITS
+        .lock()
+        .await
+        .put(bucket.to_string(), rate_limit_info);
+}
+
+async fn wait_for_rate_limit(bucket: &str) {
+    if let Some(rate_limit_info) = RATE_LIMITS.lock().await.get(bucket) {
+        log::info!("Rate limit hit: {:?}", rate_limit_info);
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        if rate_limit_info.remaining == 0 && rate_limit_info.reset > now {
+            let delay = Duration::from_secs(rate_limit_info.reset - now);
+            sleep(delay).await;
+        }
+    }
+}
+
+pub async fn request(method: Method, endpoint: &str, data: Option<JsonValue>) -> Response {
     let client = Client::new();
-    let url = format!("https://discord.com/api/v10/{}", endpoint);
+    let url = format!("{}/{}", API, endpoint);
 
     let mut request_builder = client.request(method, &url);
     request_builder = request_builder.headers(get_headers());
@@ -242,5 +235,30 @@ pub async fn send_request(
         request_builder = request_builder.body(body.to_string());
     }
 
-    request_builder.send().await
+    let bucket = endpoint.split('/').nth(2).unwrap_or_default();
+    wait_for_rate_limit(bucket).await;
+
+    let mut response = request_builder.try_clone().unwrap().send().await.unwrap();
+
+    while response.status() == StatusCode::TOO_MANY_REQUESTS {
+        let retry_after = response
+            .headers()
+            .get("retry-after")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(0.0);
+        log::warn!(
+            "Rate limited on endpoint: {}, retrying after {} seconds",
+            endpoint,
+            retry_after
+        );
+        sleep(Duration::from_secs_f32(retry_after)).await;
+        response = request_builder.try_clone().unwrap().send().await.unwrap();
+    }
+
+    if let Some(bucket) = response.headers().get("x-ratelimit-bucket") {
+        update_rate_limit_info(response.headers(), bucket.to_str().unwrap_or_default()).await;
+    }
+
+    response
 }
