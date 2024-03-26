@@ -33,10 +33,13 @@ async fn ping(
     /// The channel to get info about
     channel: Channel,
     /// The user to mention, optional
-    user: Option<User>
+    user: Option<User>,
 ) {
     interaction
-        .reply(format!("Hello, {:?}! You are in {}", user, channel.mention()), false)
+        .reply(
+            format!("Hello, {:?}! You are in {}", user, channel.mention()),
+            false,
+        )
         .await
 }
 
@@ -106,6 +109,32 @@ async fn user(msg: Message, user: User) {
         user.mention()
     ))
     .await;
+}
+
+#[slash(description = "Get a user's avatar")]
+async fn avatar(interaction: Interaction, #[doc = "User to fetch avatar from"] user: Option<User>) {
+    let member = interaction.member.as_ref().unwrap();
+    let (username, avatar) = match user {
+        Some(user) => (
+            &user.username,
+            user.get_avatar_url(ImageFormat::WebP, None).unwrap(),
+        ),
+        None => (
+            member
+                .nick
+                .as_ref()
+                .unwrap_or_else(|| &member.user.as_ref().unwrap().username),
+            member.get_avatar_url(ImageFormat::WebP, None).unwrap(),
+        ),
+    };
+
+    let embed = EmbedBuilder::new()
+        .color(Color::Blue)
+        .title(&format!("{}'s avatar", username))
+        .image(avatar, None, None)
+        .build();
+
+    interaction.reply(embed, false).await;
 }
 
 #[command]

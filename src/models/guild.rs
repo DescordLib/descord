@@ -1,5 +1,9 @@
 use nanoserde::{DeJson, SerJson};
 
+use crate::consts::DISCORD_CDN;
+use crate::{prelude::ImageFormat, utils};
+
+use super::message_response::CreateMessageData;
 use super::{channel::Channel, user::User};
 
 #[derive(DeJson, SerJson, Debug, Clone)]
@@ -123,4 +127,30 @@ pub struct Member {
     pub flags: Option<usize>,
     pub premium_since: Option<String>,
     pub nick: Option<String>,
+}
+
+impl Member {
+    pub fn get_avatar_url(&self, image_format: ImageFormat, size: Option<u32>) -> Option<String> {
+        let size = if let Some(size) = size {
+            if !size.is_power_of_two() {
+                log::error!("size must be powers of 2");
+            }
+
+            format!("?size={size}")
+        } else {
+            "".to_string()
+        };
+
+        let user = self.user.as_ref().unwrap();
+        let user_id = &user.id;
+        let avatar_hash = user.avatar_hash.as_ref()?;
+
+        Some(format!(
+            "{DISCORD_CDN}/avatars/{user_id}/{avatar_hash}{image_format}{size}"
+        ))
+    }
+
+    pub async fn send_dm(&self, data: impl Into<CreateMessageData>) {
+        utils::send_dm(&self.user.as_ref().unwrap().id, data).await;
+    }
 }

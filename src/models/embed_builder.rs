@@ -47,8 +47,14 @@ impl EmbedBuilder {
         self
     }
 
-    pub fn image(mut self, image: embed::EmbedImage) -> Self {
-        self.embed.image = Some(image);
+    pub fn image(mut self, url: String, height: Option<u32>, width: Option<u32>) -> Self {
+        self.embed.image = Some(embed::EmbedImage {
+            url,
+            proxy_url: None,
+            height,
+            width,
+        });
+
         self
     }
 
