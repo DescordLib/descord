@@ -9,6 +9,14 @@ use crate::prelude::*;
 use crate::utils::*;
 use futures_util::FutureExt;
 
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum DescordError {
+    #[error("Missing required argument for command: {0}")]
+    MissingRequiredArgument(String),
+}
+
 macro_rules! implemented_enum {
     [ $vis:vis enum $name:ident { $($variant:ident),* $(,)? } ] => {
         #[derive(Debug, Clone)]
@@ -70,20 +78,20 @@ pub type HandlerFn = fn(
     Message,
     Vec<Value>,
 ) -> std::pin::Pin<
-    Box<dyn futures_util::Future<Output = Result<(), Box<dyn std::error::Error>>> + Send + 'static>,
+    Box<dyn futures_util::Future<Output = DescordResult> + Send + 'static>,
 >;
 
 pub type SlashHandlerFn = fn(
     Interaction,
     Vec<Value>,
 ) -> std::pin::Pin<
-    Box<dyn futures_util::Future<Output = Result<(), Box<dyn std::error::Error>>> + Send + 'static>,
+    Box<dyn futures_util::Future<Output = DescordResult> + Send + 'static>,
 >;
 
 pub type EventHandlerFn = fn(
     HandlerValue,
 ) -> std::pin::Pin<
-    Box<dyn futures_util::Future<Output = Result<(), Box<dyn std::error::Error>>> + Send + 'static>,
+    Box<dyn futures_util::Future<Output = DescordResult> + Send + 'static>,
 >;
 
 #[derive(Debug, Clone)]
@@ -97,7 +105,7 @@ impl EventHandler {
         let fut = ((self.handler_fn)(data));
         let boxed_fut: std::pin::Pin<
             Box<
-                dyn std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>
+                dyn std::future::Future<Output = DescordResult>
                     + Send
                     + 'static,
             >,
@@ -206,7 +214,9 @@ impl Command {
                     _ => {}
                 }
             } else {
-                panic!("Missing required argument");
+                return Err(Box::new(DescordError::MissingRequiredArgument(
+                    self.name.clone(),
+                )));
             }
 
             idx += 1;
@@ -215,12 +225,15 @@ impl Command {
         let fut = ((self.handler_fn)(data, args));
         let boxed_fut: std::pin::Pin<
             Box<
-                dyn std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>
+                dyn std::future::Future<Output = DescordResult>
                     + Send
                     + 'static,
             >,
         > = Box::pin(fut);
-        boxed_fut.await
+
+        boxed_fut.await?;
+
+        Ok(())
     }
 }
 
@@ -332,7 +345,9 @@ impl SlashCommand {
                     _ => {}
                 }
             } else {
-                panic!("Missing required argument");
+                return Err(Box::new(DescordError::MissingRequiredArgument(
+                    self.name.clone(),
+                )));
             }
 
             idx += 1;
@@ -341,11 +356,13 @@ impl SlashCommand {
         let fut = ((self.handler_fn)(data, args));
         let boxed_fut: std::pin::Pin<
             Box<
-                dyn std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>
+                dyn std::future::Future<Output = DescordResult>
                     + Send
                     + 'static,
             >,
         > = Box::pin(fut);
-        boxed_fut.await
+
+        boxed_fut.await?;
+        Ok(())
     }
 }

@@ -267,6 +267,7 @@ dependencies = [
  "nanoserde",
  "regex",
  "reqwest",
+ "thiserror",
  "tokio",
  "tokio-tungstenite",
  "url",

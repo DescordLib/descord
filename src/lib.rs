@@ -17,7 +17,7 @@ pub use ws::payload::Payload;
 pub mod internals;
 
 // TODO: change the error type
-pub type DescordResult = Result<(), Box<dyn std::error::Error>>;
+pub type DescordResult = Result<(), Box<dyn std::error::Error + Send>>;
 
 pub(crate) mod cache;
 

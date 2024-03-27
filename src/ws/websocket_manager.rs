@@ -4,7 +4,7 @@ use nanoserde::{DeJson, SerJson};
 use reqwest::Method;
 
 use crate::client::BOT_ID;
-use crate::internals::*;
+use crate::{internals::*, utils};
 
 use crate::models::interaction::{
     Interaction, InteractionAutoCompleteChoice, InteractionAutoCompleteChoicePlaceholder,
@@ -167,8 +167,13 @@ impl WsManager {
 
                 if let Some(command_name) = message_data.data.content.split(' ').next() {
                     if let Some(handler_fn) = commands.get(command_name) {
+                        let msg_id = message_data.data.id.clone();
+                        let channel_id = message_data.data.channel_id.clone();
+
                         let handler = handler_fn.clone();
-                        handler.call(message_data.data).await;
+                        if let Err(e) = handler_fn.call(message_data.data).await {
+                            utils::reply(&msg_id, &channel_id, e.to_string()).await;
+                        }
 
                         return Ok(());
                     }
@@ -193,8 +198,13 @@ impl WsManager {
 
                 if let Some(cached_data) = MESSAGE_CACHE.lock().await.pop(&data.data.message_id) {
                     if let Some(handler) = event_handlers.get(&Event::MessageDeleteRaw).cloned() {
+                        let msg_id = data.data.message_id.clone();
+                        let channel_id = data.data.channel_id.clone();
+
                         tokio::spawn(async move {
-                            handler.call(data.data.into()).await;
+                            if let Err(e) = handler.call(data.data.into()).await {
+                                utils::reply(&msg_id, &channel_id, e.to_string()).await;
+                            }
                         });
                     }
 
@@ -222,7 +232,9 @@ impl WsManager {
                     if let Some(d) = &data.data.data {
                         if let Some(command) = slash_commands.get(&d.clone().id.unwrap()) {
                             let handler = command.clone();
-                            handler.call(data.data.clone()).await;
+                            if let Err(e) = handler.call(data.data.clone()).await {
+                                data.data.reply(e.to_string(), true).await;
+                            };
                         }
                     }
                 } else if data.data.type_ == InteractionType::ApplicationCommandAutocomplete as u32
@@ -275,6 +287,7 @@ impl WsManager {
         };
 
         if let Some(handler) = event_handlers.get(&event) {
+            // TODO: pass context data along with the error for error reporting
             handler.call(data).await;
         }
 

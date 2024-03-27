@@ -111,14 +111,12 @@ async fn message_delete(data: Message) -> DescordResult {
 #[command]
 async fn dm(msg: Message, message: Args) -> DescordResult {
     msg.author.unwrap().send_dm(message.join(" ")).await;
-
     Ok(())
 }
 
 #[command]
 async fn echo(msg: Message, stuff: Args) -> DescordResult {
     msg.reply(format!("Hello, {}", stuff.join(" "))).await;
-
     Ok(())
 }
 
@@ -126,7 +124,6 @@ async fn echo(msg: Message, stuff: Args) -> DescordResult {
 async fn channel(msg: Message, channel: Channel) -> DescordResult {
     msg.reply(format!("Channel: {}", channel.clone().name.unwrap()))
         .await;
-
     Ok(())
 }
 

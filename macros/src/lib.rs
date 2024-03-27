@@ -164,7 +164,7 @@ pub fn event(args: TokenStream, input: TokenStream) -> TokenStream {
 
             fn f(
                 data: descord::internals::HandlerValue
-            ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), Box<dyn std::error::Error>>> + Send + 'static>> {
+            ) -> std::pin::Pin<Box<dyn std::future::Future<Output = DescordResult> + Send + 'static>> {
                 Box::pin(async move {
                     #let_stmt
                     #function_body
@@ -328,7 +328,7 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
             fn f(
                 #first_param_name: Message,
                 args: Vec<internals::Value>
-            ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), Box<dyn std::error::Error>>> + Send + 'static>> {
+            ) -> std::pin::Pin<Box<dyn std::future::Future<Output = DescordResult> + Send + 'static>> {
                 Box::pin(async move {
                     #let_stmts
                     drop(args);
@@ -548,7 +548,7 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
             fn f(
                 #first_param_name: descord::models::interaction::Interaction,
                 args: Vec<internals::Value>
-            ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), Box<dyn std::error::Error>>> + Send + 'static>> {
+            ) -> std::pin::Pin<Box<dyn std::future::Future<Output = DescordResult> + Send + 'static>> {
                 Box::pin(async move {
                     #let_stmts
                     drop(args);
