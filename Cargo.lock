@@ -270,7 +270,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-tungstenite",
- "url",
 ]
 
 [[package]]

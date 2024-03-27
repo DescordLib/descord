@@ -34,7 +34,6 @@ use tokio::sync::Mutex;
 use tokio_tungstenite::tungstenite::{Message, Result};
 use tokio_tungstenite::MaybeTlsStream;
 use tokio_tungstenite::{connect_async, WebSocketStream};
-use url::Url;
 
 use crate::consts::opcode::OpCode;
 use crate::consts::{self, payloads, InteractionCallbackType, InteractionType};
@@ -54,7 +53,7 @@ pub struct WsManager {
 
 impl WsManager {
     pub async fn new(token: &str) -> Result<Self> {
-        let (socket, _response) = connect_async(Url::parse(consts::GATEWAY_URL).unwrap()).await?;
+        let (socket, _response) = connect_async(consts::GATEWAY_URL).await?;
 
         let (write, read) = socket.split();
         let (write, read) = (Arc::new(Mutex::new(write)), Arc::new(Mutex::new(read)));
