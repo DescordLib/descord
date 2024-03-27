@@ -4,7 +4,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse::{Parse, ParseStream};
 use syn::visit_mut::{self, VisitMut};
-use syn::{parse_macro_input, ExprArray, Ident, ItemFn, Token};
+use syn::{parse_macro_input, ExprArray, Ident, ItemFn, Token, ExprMethodCall};
 
 struct ReturnVisitor;
 impl VisitMut for ReturnVisitor {
@@ -12,6 +12,18 @@ impl VisitMut for ReturnVisitor {
         *i = syn::parse_quote! {
             return Ok(())
         };
+    }
+}
+
+struct UnwrapVisitor {
+    has_unwrap: bool,
+}
+
+impl VisitMut for UnwrapVisitor {
+    fn visit_expr_method_call_mut(&mut self, i: &mut ExprMethodCall) {
+        if i.method.to_string() == "unwrap" {
+            self.has_unwrap = true;
+        }
     }
 }
 
@@ -103,6 +115,11 @@ pub fn event(args: TokenStream, input: TokenStream) -> TokenStream {
     let mut function_body = function.block;
     let mut visitor = ReturnVisitor;
     visit_mut::visit_block_mut(&mut visitor, &mut function_body);
+    let mut visitor = UnwrapVisitor { has_unwrap: false };
+    visit_mut::visit_block_mut(&mut visitor, &mut function_body);
+    if visitor.has_unwrap {
+        println!("Warning: Function '{}' uses .unwrap(). Consider using ? operator if unwrapping a Result for proper error handling", function_name);
+    }
 
     if function.sig.inputs.len() != 1 {
         panic!("Expected only one parameter");
@@ -202,6 +219,12 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
     let mut function_body = function.block;
     let mut visitor = ReturnVisitor;
     visit_mut::visit_block_mut(&mut visitor, &mut function_body);
+    let mut visitor = UnwrapVisitor { has_unwrap: false };
+    visit_mut::visit_block_mut(&mut visitor, &mut function_body);
+    if visitor.has_unwrap {
+        println!("Warning: Function '{}' uses .unwrap(). Consider using ? operator if unwrapping a Result for proper error handling", function_name);
+    }
+
     let function_params = &function.sig.inputs;
     let function_vis = function.vis;
 
@@ -387,6 +410,11 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
     let mut function_body = function.block;
     let mut visitor = ReturnVisitor;
     visit_mut::visit_block_mut(&mut visitor, &mut function_body);
+    let mut visitor = UnwrapVisitor { has_unwrap: false };
+    visit_mut::visit_block_mut(&mut visitor, &mut function_body);
+    if visitor.has_unwrap {
+        println!("Warning: Function '{}' uses .unwrap(). Consider using ? operator if unwrapping a Result for proper error handling", function_name);
+    }
     let function_params = &function.sig.inputs;
     let function_vis = function.vis;
 
