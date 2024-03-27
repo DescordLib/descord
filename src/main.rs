@@ -23,7 +23,7 @@ async fn ping(
     channel: Channel,
     /// The user to mention, optional
     user: Option<User>,
-) -> DescordResult {
+) {
     if let Some(user) = user {
         interaction
             .reply(
@@ -40,12 +40,10 @@ async fn ping(
             .reply(format!("You are in {}", channel.mention()), false)
             .await;
     }
-
-    Ok(())
 }
 
 #[command(name = "info")]
-async fn info(msg: Message, channel: Channel, user: Option<User>) -> DescordResult {
+async fn info(msg: Message, channel: Channel, user: Option<User>) {
     if let Some(user) = user {
         msg.reply(format!(
             "Hello, {}! You are in {}",
@@ -56,8 +54,6 @@ async fn info(msg: Message, channel: Channel, user: Option<User>) -> DescordResu
     } else {
         msg.reply(format!("You are in {}", channel.mention())).await;
     }
-
-    Ok(())
 }
 
 async fn auto_cmp(value: String) -> Vec<String> {
@@ -70,81 +66,30 @@ async fn auto_cmp(value: String) -> Vec<String> {
 }
 
 #[slash(name = "echo", description = "Echoes the input")]
-async fn echo_slash(
-    interaction: Interaction,
-    #[autocomplete = auto_cmp] message: String,
-) -> DescordResult {
+async fn echo_slash(interaction: Interaction, #[autocomplete = auto_cmp] message: String) {
     interaction.defer().await;
     interaction.followup(message).await;
-
-    Ok(())
 }
 
 #[slash(name = "whisper", description = "Respond with ephemeral message")]
-async fn whisper(interaction: Interaction) -> DescordResult {
+async fn whisper(interaction: Interaction) {
     interaction
         .reply("This is an ephemeral message", true)
         .await;
-
-    Ok(())
 }
 
 #[event]
-async fn message_delete_raw(_: DeletedMessage) -> DescordResult {
+async fn message_delete_raw(_: DeletedMessage) {
     println!("message deleted");
-
-    Ok(())
-}
-
-#[event]
-async fn message_delete(data: Message) -> DescordResult {
-    println!("cached message deleted: {}", data.content);
-
-    Ok(())
-}
-
-// #[event]
-// async fOk((n guild_create(data: GuildCreate) {
-//     println!("Guild: {}", data.name);
-// }
-
-#[command]
-async fn dm(msg: Message, message: Args) -> DescordResult {
-    msg.author.unwrap().send_dm(message.join(" ")).await;
-    Ok(())
 }
 
 #[command]
-async fn echo(msg: Message, stuff: Args) -> DescordResult {
+async fn echo(msg: Message, stuff: Args) {
     msg.reply(format!("Hello, {}", stuff.join(" "))).await;
-    Ok(())
-}
-
-#[command(name = "channel")]
-async fn channel(msg: Message, channel: Channel) -> DescordResult {
-    msg.reply(format!("Channel: {}", channel.clone().name.unwrap()))
-        .await;
-    Ok(())
-}
-
-#[command(name = "user")]
-async fn user(msg: Message, user: User) -> DescordResult {
-    msg.reply(format!(
-        "name: {0}, id: {1} {2}",
-        user.username,
-        user.id,
-        user.mention()
-    ))
-    .await;
-
-    Ok(())
 }
 
 #[slash(description = "Get a user's avatar")]
-async fn avatar(
-    interaction: Interaction,
-    #[doc = "User to fetch avatar from"] user: Option<User>,
-) -> DescordResult {
+async fn avatar(interaction: Interaction, #[doc = "User to fetch avatar from"] user: Option<User>) {
     let member = interaction.member.as_ref().unwrap();
     let (username, avatar) = match user {
         Some(user) => (
@@ -167,62 +112,34 @@ async fn avatar(
         .build();
 
     interaction.reply(embed, false).await;
-
-    Ok(())
 }
 
 #[command]
-async fn av(msg: Message) -> DescordResult {
-    msg.reply(format!(
-        "{}\n{}",
-        msg.author
-            .as_ref()
-            .unwrap()
-            .get_avatar_url(ImageFormat::Png, Some(16))
-            .unwrap(),
-        msg.author
-            .as_ref()
-            .unwrap()
-            .get_avatar_url(ImageFormat::Png, Some(4096))
-            .unwrap(),
-    ))
-    .await;
-
-    Ok(())
-}
-
-#[command]
-async fn counter(msg: Message) -> DescordResult {
+async fn counter(msg: Message) {
     let msg = msg.send_in_channel("Count: 0").await;
 
     msg.react("⬆").await;
     msg.react("⬇").await;
-
-    Ok(())
 }
 
 #[command]
-async fn react(msg: Message, emoji: String) -> DescordResult {
+async fn react(msg: Message, emoji: String) {
     println!("reacting");
     msg.react(&emoji).await;
-
-    Ok(())
 }
 
 #[event]
-async fn ready(data: ReadyData) -> DescordResult {
+async fn ready(data: ReadyData) {
     println!(
         "Logged in as: {}#{}",
         data.user.username, data.user.discriminator
     );
-
-    Ok(())
 }
 
 #[event]
-async fn reaction_add(reaction: Reaction) -> DescordResult {
+async fn reaction_add(reaction: Reaction) {
     if reaction.member.clone().unwrap().user.unwrap().bot {
-        return Ok(());
+        return;
     }
 
     let msg = reaction.get_message().await;
@@ -242,12 +159,10 @@ async fn reaction_add(reaction: Reaction) -> DescordResult {
             msg.edit(format!("{counter_message} {count}"))
         );
     }
-
-    Ok(())
 }
 
 #[command]
-async fn components(message: Message) -> DescordResult {
+async fn components(message: Message) {
     let b1: Component = ComponentBuilder::button(ButtonObject {
         style: ButtonStyle::Primary as _,
         label: Some("Click me".to_string()),
@@ -299,18 +214,4 @@ async fn components(message: Message) -> DescordResult {
             ..Default::default()
         })
         .await;
-
-    Ok(())
 }
-
-// #[event]
-// async fOk((n interaction_create(interaction: Interaction) ->DescordResult{
-// println!("interaction: {:#?}", interaction);
-// int.message
-//     .unwrap()
-//     .send_in_channel(format!(
-//         "custom id: {}",
-//         int.data.unwrap().custom_id.unwrap()
-//     ))
-//     .await;
-// }

@@ -3,31 +3,16 @@ use darling::{Error, FromMeta};
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse::{Parse, ParseStream};
+use syn::visit_mut::{self, VisitMut};
 use syn::{parse_macro_input, ExprArray, Ident, ItemFn, Token};
 
-macro_rules! check_return_type {
-    [ $function:expr, $ret_ty:ident ] => {
-        let ret_ty = stringify!($ret_ty);
-        let error = || -> ! { panic!("Function return type should be `{ret_ty}`") };
-        match $function.sig.output {
-            syn::ReturnType::Type(_, ret_type) => match *ret_type {
-                syn::Type::Path(ref path)
-                    if path
-                        .path
-                        .segments
-                        .last()
-                        .unwrap()
-                        .ident
-                        .to_string()
-                        .as_str()
-                        == ret_ty => {}
-
-                _ => error(),
-            },
-
-            _ => error(),
-        }
-    };
+struct ReturnVisitor;
+impl VisitMut for ReturnVisitor {
+    fn visit_expr_return_mut(&mut self, i: &mut syn::ExprReturn) {
+        *i = syn::parse_quote! {
+            return Ok(())
+        };
+    }
 }
 
 macro_rules! event_handler_args {
@@ -115,13 +100,13 @@ pub fn event(args: TokenStream, input: TokenStream) -> TokenStream {
     let function = parse_macro_input!(input as ItemFn);
     let function_vis = function.vis;
     let function_name = &function.sig.ident;
-    let function_body = &function.block;
+    let mut function_body = function.block;
+    let mut visitor = ReturnVisitor;
+    visit_mut::visit_block_mut(&mut visitor, &mut function_body);
 
     if function.sig.inputs.len() != 1 {
         panic!("Expected only one parameter");
     }
-
-    check_return_type!(function, DescordResult);
 
     let param_name = match function.sig.inputs.first().unwrap() {
         syn::FnArg::Typed(x) => match *x.pat {
@@ -168,6 +153,7 @@ pub fn event(args: TokenStream, input: TokenStream) -> TokenStream {
                 Box::pin(async move {
                     #let_stmt
                     #function_body
+                    Ok(())
                 })
             }
 
@@ -188,8 +174,6 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
     if function.sig.asyncness.is_none() {
         panic!("Function marked with `#[descord::command(...)]` should be async");
     }
-
-    check_return_type!(function, DescordResult);
 
     let attr_args = match NestedMeta::parse_meta_list(args.into()) {
         Ok(v) => v,
@@ -215,7 +199,9 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
     );
 
     let function_name = &function.sig.ident;
-    let function_body = &function.block;
+    let mut function_body = function.block;
+    let mut visitor = ReturnVisitor;
+    visit_mut::visit_block_mut(&mut visitor, &mut function_body);
     let function_params = &function.sig.inputs;
     let function_vis = function.vis;
 
@@ -332,8 +318,8 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
                 Box::pin(async move {
                     #let_stmts
                     drop(args);
-
                     #function_body
+                    Ok(())
                 })
             }
 
@@ -375,8 +361,6 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
         panic!("Function marked with `#[descord::slash(...)]` should be async");
     }
 
-    check_return_type!(function, DescordResult);
-
     let attr_args = match NestedMeta::parse_meta_list(args.into()) {
         Ok(v) => v,
         Err(e) => {
@@ -400,7 +384,9 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
         .unwrap_or_else(|| String::from("No description provided"));
 
     let function_name = &function.sig.ident;
-    let function_body = &function.block;
+    let mut function_body = function.block;
+    let mut visitor = ReturnVisitor;
+    visit_mut::visit_block_mut(&mut visitor, &mut function_body);
     let function_params = &function.sig.inputs;
     let function_vis = function.vis;
 
@@ -552,8 +538,8 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
                 Box::pin(async move {
                     #let_stmts
                     drop(args);
-
                     #function_body
+                    Ok(())
                 })
             }
 

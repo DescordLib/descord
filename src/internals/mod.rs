@@ -104,11 +104,7 @@ impl EventHandler {
     pub async fn call(&self, data: HandlerValue) -> DescordResult {
         let fut = ((self.handler_fn)(data));
         let boxed_fut: std::pin::Pin<
-            Box<
-                dyn std::future::Future<Output = DescordResult>
-                    + Send
-                    + 'static,
-            >,
+            Box<dyn std::future::Future<Output = DescordResult> + Send + 'static>,
         > = Box::pin(fut);
         boxed_fut.await
     }
@@ -224,11 +220,7 @@ impl Command {
 
         let fut = ((self.handler_fn)(data, args));
         let boxed_fut: std::pin::Pin<
-            Box<
-                dyn std::future::Future<Output = DescordResult>
-                    + Send
-                    + 'static,
-            >,
+            Box<dyn std::future::Future<Output = DescordResult> + Send + 'static>,
         > = Box::pin(fut);
 
         boxed_fut.await?;
@@ -355,11 +347,7 @@ impl SlashCommand {
 
         let fut = ((self.handler_fn)(data, args));
         let boxed_fut: std::pin::Pin<
-            Box<
-                dyn std::future::Future<Output = DescordResult>
-                    + Send
-                    + 'static,
-            >,
+            Box<dyn std::future::Future<Output = DescordResult> + Send + 'static>,
         > = Box::pin(fut);
 
         boxed_fut.await?;

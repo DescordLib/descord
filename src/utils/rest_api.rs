@@ -197,10 +197,7 @@ async fn update_rate_limit_info(headers: &HeaderMap<HeaderValue>, bucket: &str) 
         .and_then(|v| v.parse().ok())
         .unwrap_or(0.0);
 
-    let rate_limit_info = RateLimitInfo {
-        remaining,
-        reset,
-    };
+    let rate_limit_info = RateLimitInfo { remaining, reset };
 
     RATE_LIMITS
         .lock()
@@ -239,7 +236,6 @@ pub async fn request(method: Method, endpoint: &str, data: Option<JsonValue>) ->
     }
 
     let mut response = request_builder.try_clone().unwrap().send().await.unwrap();
-
     while response.status() == StatusCode::TOO_MANY_REQUESTS {
         let retry_after = response
             .headers()
