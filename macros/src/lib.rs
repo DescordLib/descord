@@ -4,7 +4,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse::{Parse, ParseStream};
 use syn::visit_mut::{self, VisitMut};
-use syn::{parse_macro_input, ExprArray, Ident, ItemFn, Token, ExprMethodCall};
+use syn::{parse_macro_input, ExprArray, ExprMethodCall, Ident, ItemFn, Token};
 
 struct ReturnVisitor;
 impl VisitMut for ReturnVisitor {

@@ -142,11 +142,7 @@ pub async fn send_dm(user_id: &str, data: impl Into<CreateMessageData>) {
 }
 
 pub async fn remove_reaction(channel_id: &str, message_id: &str, user_id: &str, emoji: &str) {
-    let url = format!(
-        "channels/{channel_id}/messages/{message_id}/reactions/{emoji}/{user_id}",
-        emoji = urlencoding::encode(emoji)
-    );
-
+    let url = format!("channels/{channel_id}/messages/{message_id}/reactions/{emoji}/{user_id}");
     request(Method::DELETE, &url, None).await;
 }
 
