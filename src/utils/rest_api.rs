@@ -1,4 +1,4 @@
-use crate::cache::{RateLimitInfo, MESSAGE_CACHE, RATE_LIMITS, ENDPOINT_BUCKET_MAP};
+use crate::cache::{RateLimitInfo, ENDPOINT_BUCKET_MAP, MESSAGE_CACHE, RATE_LIMITS};
 use crate::client::TOKEN;
 use crate::consts::API;
 use std::collections::HashMap;
@@ -185,21 +185,19 @@ fn get_headers() -> HeaderMap {
     map
 }
 
-fn parse_header(headers: &HeaderMap<HeaderValue>, header_name: &str) -> u64 {
-    headers
-        .get(header_name)
+async fn update_rate_limit_info(headers: &HeaderMap<HeaderValue>, bucket: &str) {
+    let remaining = headers
+        .get("x-ratelimit-remaining")
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.parse().ok())
-        .unwrap_or(0)
-}
-
-async fn update_rate_limit_info(headers: &HeaderMap<HeaderValue>, bucket: &str) {
-    let limit = parse_header(headers, "x-ratelimit-limit");
-    let remaining = parse_header(headers, "x-ratelimit-remaining");
-    let reset = parse_header(headers, "x-ratelimit-reset");
+        .unwrap_or(0);
+    let reset = headers
+        .get("x-ratelimit-reset")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(0.0);
 
     let rate_limit_info = RateLimitInfo {
-        limit,
         remaining,
         reset,
     };
@@ -216,9 +214,9 @@ async fn wait_for_rate_limit(bucket: &str) {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
-            .as_secs();
+            .as_secs_f64();
         if rate_limit_info.remaining == 0 && rate_limit_info.reset > now {
-            let delay = Duration::from_secs(rate_limit_info.reset - now);
+            let delay = Duration::from_secs_f64(rate_limit_info.reset - now);
             sleep(delay).await;
         }
     }

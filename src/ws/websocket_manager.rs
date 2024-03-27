@@ -142,13 +142,18 @@ impl WsManager {
         commands: Arc<HashMap<String, Command>>,
         slash_commands: Arc<HashMap<String, SlashCommand>>,
     ) -> Result<(), nanoserde::DeJsonErr> {
-        let mut event = Event::from_str(payload.type_name.as_ref().unwrap().as_str()).unwrap();
+        let mut event = match Event::from_str(payload.type_name.as_ref().unwrap().as_str()) {
+            Ok(event) => event,
+            Err(_) => {
+                error!("Failed to parse event from payload type name");
+                return Ok(());
+            }
+        };
+
         let data = match event {
             Event::Ready => {
                 let data = ReadyResponse::deserialize_json(&payload.raw_json).unwrap();
-
                 *BOT_ID.lock().unwrap() = Some(data.data.user.id.clone());
-
                 data.data.into()
             }
 
