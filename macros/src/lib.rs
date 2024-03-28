@@ -613,7 +613,7 @@ pub fn register_all_commands(input: TokenStream) -> TokenStream {
             .collect()
     } else {
         let mut paths = Vec::new();
-        for entry in walkdir::WalkDir::new("src") {
+        for entry in walkdir::WalkDir::new("src").max_depth(5) {
             let entry = entry.unwrap();
             if entry.file_type().is_file() {
                 paths.push(entry.path().to_string_lossy().into_owned());
@@ -672,7 +672,7 @@ pub fn register_all_slash_commands(input: TokenStream) -> TokenStream {
             .collect()
     } else {
         let mut paths = Vec::new();
-        for entry in walkdir::WalkDir::new("src") {
+        for entry in walkdir::WalkDir::new("src").max_depth(5) {
             let entry = entry.unwrap();
             if entry.file_type().is_file() {
                 paths.push(entry.path().to_string_lossy().into_owned());
@@ -734,7 +734,7 @@ pub fn register_all_events(input: TokenStream) -> TokenStream {
             .collect()
     } else {
         let mut paths = Vec::new();
-        for entry in walkdir::WalkDir::new("src") {
+        for entry in walkdir::WalkDir::new("src").max_depth(5) {
             let entry = entry.unwrap();
             if entry.file_type().is_file() {
                 paths.push(entry.path().to_string_lossy().into_owned());
@@ -796,7 +796,7 @@ pub fn register_all(input: TokenStream) -> TokenStream {
             .collect()
     } else {
         let mut paths = Vec::new();
-        for entry in walkdir::WalkDir::new("src") {
+        for entry in walkdir::WalkDir::new("src").max_depth(5) {
             let entry = entry.unwrap();
             if entry.file_type().is_file() {
                 paths.push(entry.path().to_string_lossy().into_owned());

@@ -110,6 +110,46 @@ impl EventHandler {
     }
 }
 
+fn parse_args(input: &str) -> Vec<String> {
+    let mut args = Vec::new();
+    let mut current_arg = String::new();
+    let mut quote_char = None;
+    let mut chars = input.chars();
+
+    while let Some(c) = chars.next() {
+        match c {
+            ' ' | '\t' if quote_char.is_none() => {
+                if !current_arg.is_empty() {
+                    args.push(current_arg.clone());
+                    current_arg.clear();
+                }
+            }
+            '\'' | '"' => {
+                if quote_char.is_none() {
+                    quote_char = Some(c);
+                    current_arg.push(c);
+                } else if quote_char.unwrap() == c {
+                    quote_char = None;
+                    current_arg.remove(0);
+                } else {
+                    current_arg.push(c);
+                }
+            }
+            _ => current_arg.push(c),
+        }
+    }
+
+    if !current_arg.is_empty() {
+        if quote_char.is_some() {
+            args.extend(current_arg.split_whitespace().map(|s| s.to_string()));
+        } else {
+            args.push(current_arg);
+        }
+    }
+
+    args
+}
+
 #[derive(Debug, Clone)]
 pub struct Command {
     pub name: String,
@@ -121,13 +161,7 @@ pub struct Command {
 
 impl Command {
     pub async fn call(&self, data: Message) -> DescordResult {
-        let re = regex::Regex::new(r#"([^"\s']+)|"([^"]*)"|'([^']*)'"#).unwrap();
-        let split: Vec<String> = re
-            .captures_iter(&data.content)
-            .filter_map(|cap| cap.get(1).or(cap.get(2)).or(cap.get(3)))
-            .map(|m| m.as_str().to_string())
-            .collect();
-
+        let split = parse_args(&data.content);
         let mut args: Vec<Value> = Vec::with_capacity(self.fn_sig.len());
 
         let mut idx = 1;

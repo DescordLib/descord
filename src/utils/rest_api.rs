@@ -94,13 +94,17 @@ pub async fn reply(
 pub async fn get_channel(channel_id: &str) -> Result<Channel, Box<dyn std::error::Error>> {
     let url = format!("channels/{channel_id}");
     let resp = request(Method::GET, &url, None).await.text().await?;
-    Ok(Channel::deserialize_json(&resp)?)
+    let mut channel = Channel::deserialize_json(&resp)?;
+    channel.mention = format!("<#{}>", channel.id);
+    Ok(channel)
 }
 
 pub async fn get_user(user_id: &str) -> Result<User, Box<dyn std::error::Error>> {
-    let url = format!("users/{user_id}");
+    let url = format!("users/{}", user_id);
     let resp = request(Method::GET, &url, None).await;
-    Ok(User::deserialize_json(&resp.text().await?)?)
+    let mut user = User::deserialize_json(&resp.text().await?)?;
+    user.mention = format!("<@{}>", user.id);
+    Ok(user)
 }
 
 /// Returns true if the operation was successful, false otherwise.
@@ -227,8 +231,12 @@ pub async fn request(method: Method, endpoint: &str, data: Option<JsonValue>) ->
     }
 
     let bucket = ENDPOINT_BUCKET_MAP.lock().await.get(endpoint).cloned();
+    let seen;
     if let Some(bucket) = bucket {
         wait_for_rate_limit(&bucket).await;
+        seen = true;
+    } else {
+        seen = false;
     }
 
     let mut response = request_builder.try_clone().unwrap().send().await.unwrap();
@@ -251,10 +259,12 @@ pub async fn request(method: Method, endpoint: &str, data: Option<JsonValue>) ->
     if let Some(bucket) = response.headers().get("x-ratelimit-bucket") {
         let bucket = bucket.to_str().unwrap_or_default();
         update_rate_limit_info(response.headers(), bucket).await;
-        ENDPOINT_BUCKET_MAP
-            .lock()
-            .await
-            .put(endpoint.to_string(), bucket.to_string());
+        if !seen {
+            ENDPOINT_BUCKET_MAP
+                .lock()
+                .await
+                .put(endpoint.to_string(), bucket.to_string());
+        }
     }
 
     response

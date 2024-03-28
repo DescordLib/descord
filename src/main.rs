@@ -29,30 +29,16 @@ async fn ping(
             .reply(
                 format!(
                     "Hello, {}! You are in {}",
-                    user.mention(),
-                    channel.mention()
+                    user.mention,
+                    channel.mention
                 ),
                 false,
             )
             .await;
     } else {
         interaction
-            .reply(format!("You are in {}", channel.mention()), false)
+            .reply(format!("You are in {}", channel.mention), false)
             .await;
-    }
-}
-
-#[command(name = "info")]
-async fn info(msg: Message, channel: Channel, user: Option<User>) {
-    if let Some(user) = user {
-        msg.reply(format!(
-            "Hello, {}! You are in {}",
-            user.mention(),
-            channel.mention()
-        ))
-        .await;
-    } else {
-        msg.reply(format!("You are in {}", channel.mention())).await;
     }
 }
 
@@ -84,8 +70,8 @@ async fn message_delete_raw(_: DeletedMessage) {
 }
 
 #[command]
-async fn echo(msg: Message, stuff: Args) {
-    msg.reply(format!("Hello, {}", stuff.join(" "))).await;
+async fn echo(msg: Message, stuff: String) {
+    msg.reply(format!("Hello, {}", stuff)).await;
 }
 
 #[slash(description = "Get a user's avatar")]

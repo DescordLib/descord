@@ -1,5 +1,4 @@
 use nanoserde::{DeJson, SerJson};
-
 use crate::{consts::ImageFormat, utils};
 
 use crate::consts::*;
@@ -24,6 +23,8 @@ pub struct User {
     pub bot: bool,
     #[nserde(rename = "avatar")]
     pub avatar_hash: Option<String>,
+    #[nserde(default)]
+    pub mention: String,
 }
 
 impl User {
@@ -44,9 +45,5 @@ impl User {
         Some(format!(
             "{DISCORD_CDN}/avatars/{user_id}/{avatar_hash}{image_format}{size}"
         ))
-    }
-
-    pub fn mention(&self) -> String {
-        format!("<@{0}>", self.id)
     }
 }

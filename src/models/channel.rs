@@ -18,14 +18,13 @@ pub struct Channel {
 
     #[nserde(rename = "type")]
     pub channel_type: u32,
+
+    #[nserde(default)]
+    pub mention: String,
 }
 
 impl Channel {
     pub async fn send_message(&self, data: impl Into<CreateMessageData>) -> Message {
         utils::send(&self.id, data).await
-    }
-
-    pub fn mention(&self) -> String {
-        format!("<#{}>", self.id)
     }
 }
