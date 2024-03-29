@@ -105,6 +105,8 @@ struct CommandArgs {
     name: Option<String>,
     #[darling(default)]
     prefix: Option<String>,
+    #[darling(multiple)]
+    permissions: Vec<String>,
 }
 
 #[proc_macro_attribute]
@@ -114,9 +116,11 @@ pub fn event(args: TokenStream, input: TokenStream) -> TokenStream {
     let function_name = &function.sig.ident;
     let mut function_body = function.block;
     let mut visitor = ReturnVisitor;
+
     visit_mut::visit_block_mut(&mut visitor, &mut function_body);
     let mut visitor = UnwrapVisitor { has_unwrap: false };
     visit_mut::visit_block_mut(&mut visitor, &mut function_body);
+
     if visitor.has_unwrap {
         println!("Warning: Function '{}' uses .unwrap(). Consider using ? operator if unwrapping a Result for proper error handling", function_name);
     }
@@ -216,11 +220,14 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
     );
 
     let function_name = &function.sig.ident;
+    let permissions = command_args.permissions;
     let mut function_body = function.block;
     let mut visitor = ReturnVisitor;
+
     visit_mut::visit_block_mut(&mut visitor, &mut function_body);
     let mut visitor = UnwrapVisitor { has_unwrap: false };
     visit_mut::visit_block_mut(&mut visitor, &mut function_body);
+
     if visitor.has_unwrap {
         println!("Warning: Function '{}' uses .unwrap(). Consider using ? operator if unwrapping a Result for proper error handling", function_name);
     }
@@ -352,6 +359,7 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
                 handler_fn: f,
                 custom_prefix: #custom_prefix,
                 optional_params: vec![#(#optional_params),*],
+                permissions: vec![#(#permissions.to_string()),*],
             }
         }
     };
@@ -365,6 +373,8 @@ struct SlashCommandArgs {
     name: Option<String>,
     #[darling(default)]
     description: Option<String>,
+    #[darling(multiple)]
+    permissions: Vec<String>,
 }
 
 #[derive(Debug, FromMeta)]
@@ -397,6 +407,8 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
             return TokenStream::from(Error::from(e).write_errors());
         }
     };
+
+    let permissions = slash_command_args.permissions;
 
     let new_name = slash_command_args
         .name
@@ -580,6 +592,7 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
                 fn_param_renames: vec![#(#param_renames),*],
                 fn_param_autocomplete: vec![#(#param_autocomplete),*],
                 optional_params: vec![#(#optional_params),*],
+                permissions: vec![#(#permissions.to_string()),*],
                 handler_fn: f,
             }
         }
