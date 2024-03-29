@@ -27,11 +27,7 @@ async fn ping(
     if let Some(user) = user {
         interaction
             .reply(
-                format!(
-                    "Hello, {}! You are in {}",
-                    user.mention,
-                    channel.mention
-                ),
+                format!("Hello, {}! You are in {}", user.mention, channel.mention),
                 false,
             )
             .await;
@@ -52,6 +48,7 @@ async fn auto_cmp(value: String) -> Vec<String> {
 }
 
 #[slash(name = "echo", description = "Echoes the input")]
+#[permissions = "administrator"]
 async fn echo_slash(interaction: Interaction, #[autocomplete = auto_cmp] message: String) {
     interaction.defer().await;
     interaction.followup(message).await;

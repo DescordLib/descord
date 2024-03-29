@@ -5,6 +5,7 @@ use nanoserde::DeJson;
 use reqwest::Method;
 
 use super::*;
+use crate::consts::permissions as perms;
 use crate::internals::*;
 
 use crate::models::application_command::ApplicationCommand;
@@ -19,12 +20,21 @@ fn map_param_type_to_u32(param_type: &ParamType) -> u32 {
     }
 }
 
+// TODO for fireplank, add checks for permissions
+// TODO fix this stupid looking code
+
 pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<String, SlashCommand> {
     let mut slash_commands = HashMap::new();
     let bot_id = get_bot_id().await;
     let registered_commands = fetch_application_commands(&bot_id).await;
 
     for local_command in &commands {
+        let mut permissions: u64 = 0;
+        for permission in &local_command.permissions {
+            let permission = perms::parse(&permission).expect("unknown permission name");
+            permissions |= permission;
+        }
+
         let options = local_command
             .fn_param_names
             .iter()
@@ -89,15 +99,16 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
                 .map(|autocomplete| autocomplete.is_some())
                 .collect::<Vec<_>>();
 
+            let types = local_command
+                .fn_sig
+                .iter()
+                .map(map_param_type_to_u32)
+                .collect::<Vec<_>>();
+
             if local_command.description != registered_command.description
                 || fn_param_names != registered_names
                 || local_command.fn_param_descriptions != registered_descriptions
-                || local_command
-                    .fn_sig
-                    .iter()
-                    .map(map_param_type_to_u32)
-                    .collect::<Vec<_>>()
-                    != registered_types
+                || types != registered_types
                 || fn_param_autocompletes != registered_autocompletes
                 || local_command.optional_params != registered_optionals
             {
@@ -108,6 +119,7 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
                         name: local_command.name.clone(),
                         description: local_command.description.clone(),
                         options: options,
+                        default_member_permissions: permissions.to_string(),
                     }),
                 )
                 .await
@@ -138,6 +150,7 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
                     name: local_command.name.clone(),
                     description: local_command.description.clone(),
                     options: options,
+                    default_member_permissions: permissions.to_string(),
                 }),
             )
             .await
