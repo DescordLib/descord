@@ -166,8 +166,37 @@ impl WsManager {
 
                 if let Some(command_name) = message_data.data.content.split(' ').next() {
                     if let Some(handler_fn) = commands.get(command_name) {
-                        let msg_id = message_data.data.id.clone();
-                        let channel_id = message_data.data.channel_id.clone();
+                        let mut required_permissions: u64 = 0;
+
+                        for permission in &handler_fn.permissions {
+                            required_permissions |= permission.parse::<u64>().unwrap();
+                        }
+
+                        // FIXME: permissions field is none for some reason
+                        // let user_permissions = message_data
+                        //     .data
+                        //     .member
+                        //     .as_ref()
+                        //     .unwrap() // SAFETY: member is extra field, unwrap is safe
+                        //     .permissions
+                        //     .as_ref()
+                        //     .unwrap()
+                        //     .parse::<u64>()
+                        //     .unwrap();
+
+                        // let msg_id = message_data.data.id.clone();
+                        // let channel_id = message_data.data.channel_id.clone();
+
+                        // if user_permissions & required_permissions != required_permissions {
+                        //     utils::reply(
+                        //         &msg_id,
+                        //         &channel_id,
+                        //         "You are missing the required permissions for running this command",
+                        //     )
+                        //     .await;
+
+                        //     return Ok(());
+                        // }
 
                         let handler = handler_fn.clone();
                         if let Err(e) = handler_fn.call(message_data.data).await {

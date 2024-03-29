@@ -7,6 +7,7 @@ use crate::{consts, Client};
 use super::allowed_mentions::AllowedMentions;
 use super::channel::Channel;
 use super::components::Component;
+use super::guild::Member;
 use super::message_edit::MessageEditData;
 use super::{author::Author, embed::Embed, message_reference::MessageReference};
 
@@ -47,6 +48,9 @@ pub struct Message {
 
     pub guild_id: Option<String>,
     pub id: String,
+
+    pub member: Option<Member>,
+
     // TODO
     // mentions, mention_roles, member, etc.
 }

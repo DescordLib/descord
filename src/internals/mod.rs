@@ -157,6 +157,7 @@ pub struct Command {
     pub fn_sig: Vec<ParamType>,
     pub handler_fn: HandlerFn,
     pub optional_params: Vec<bool>,
+    pub permissions: Vec<String>,
 }
 
 impl Command {
@@ -277,6 +278,7 @@ pub struct SlashCommand {
     pub fn_param_names: Vec<String>,
     pub fn_param_descriptions: Vec<String>,
     pub optional_params: Vec<bool>,
+    pub permissions: Vec<String>,
     pub fn_param_renames: Vec<Option<String>>,
     pub fn_param_autocomplete: Vec<Option<AutoCompleteFn>>,
 }
