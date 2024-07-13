@@ -1,5 +1,5 @@
-use nanoserde::{DeJson, SerJson};
 use crate::{consts::ImageFormat, utils};
+use nanoserde::{DeJson, SerJson};
 
 use crate::consts::*;
 

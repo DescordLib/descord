@@ -1,16 +1,16 @@
-use std::error::Error;
 use json::object;
 use nanoserde::{DeJson, SerJson};
+use std::error::Error;
 
-use crate::utils;
-use crate::{consts, Client};
-use crate::prelude::User;
 use super::allowed_mentions::AllowedMentions;
 use super::channel::Channel;
 use super::components::Component;
 use super::guild::Member;
 use super::message_edit::MessageEditData;
 use super::{author::Author, embed::Embed, message_reference::MessageReference};
+use crate::prelude::User;
+use crate::utils;
+use crate::{consts, Client};
 
 #[derive(DeJson, SerJson, Clone, Debug)]
 pub struct MessageResponse {
@@ -51,7 +51,6 @@ pub struct Message {
     pub id: String,
 
     pub member: Option<Member>,
-
     // TODO
     // mentions, mention_roles, member, etc.
 }
@@ -70,7 +69,11 @@ impl Message {
     }
 
     pub async fn get_author(&self) -> Result<Member, Box<dyn Error>> {
-        utils::get_member(self.guild_id.as_ref().unwrap(), &self.author.as_ref().unwrap().user_id).await
+        utils::get_member(
+            self.guild_id.as_ref().unwrap(),
+            &self.author.as_ref().unwrap().user_id,
+        )
+        .await
     }
 
     pub async fn delete(&self) -> bool {

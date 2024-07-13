@@ -1,7 +1,7 @@
-use nanoserde::{DeJson, SerJson};
-use reqwest::Method;
 use crate::consts::DISCORD_CDN;
 use crate::{prelude::ImageFormat, utils};
+use nanoserde::{DeJson, SerJson};
+use reqwest::Method;
 
 use super::message_response::CreateMessageData;
 use super::{channel::Channel, user::User};
@@ -135,7 +135,6 @@ impl Guild {
     pub async fn fetch_member(&self, user_id: &str) -> Option<Member> {
         Some(utils::get_member(&self.id, user_id).await.ok()?)
     }
-
 }
 
 impl Member {
