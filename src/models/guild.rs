@@ -1,5 +1,5 @@
 use nanoserde::{DeJson, SerJson};
-
+use reqwest::Method;
 use crate::consts::DISCORD_CDN;
 use crate::{prelude::ImageFormat, utils};
 
@@ -127,6 +127,15 @@ pub struct Member {
     pub flags: Option<usize>,
     pub premium_since: Option<String>,
     pub nick: Option<String>,
+    #[nserde(default)]
+    pub mention: String,
+}
+
+impl Guild {
+    pub async fn fetch_member(&self, user_id: &str) -> Option<Member> {
+        Some(utils::get_member(&self.id, user_id).await.ok()?)
+    }
+
 }
 
 impl Member {

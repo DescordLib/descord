@@ -10,7 +10,7 @@ use crate::models::dm_channel::DirectMessageChannel;
 use crate::models::message_edit::MessageEditData;
 use crate::models::message_response::CreateMessageData;
 
-use crate::prelude::Message;
+use crate::prelude::{Member, Message};
 use crate::prelude::User;
 
 use futures_util::TryFutureExt;
@@ -105,6 +105,14 @@ pub async fn get_user(user_id: &str) -> Result<User, Box<dyn std::error::Error>>
     let mut user = User::deserialize_json(&resp.text().await?)?;
     user.mention = format!("<@{}>", user.id);
     Ok(user)
+}
+
+pub async fn get_member(guild_id: &str, user_id: &str) -> Result<Member, Box<dyn std::error::Error>> {
+    let url = format!("guilds/{guild_id}/members/{user_id}");
+    let resp = request(Method::GET, &url, None).await;
+    let mut member = Member::deserialize_json(&resp.text().await?)?;
+    member.mention = format!("<@{}>", user_id);
+    Ok(member)
 }
 
 /// Returns true if the operation was successful, false otherwise.

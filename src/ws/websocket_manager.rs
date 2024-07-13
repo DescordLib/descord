@@ -172,31 +172,29 @@ impl WsManager {
                             required_permissions |= permission.parse::<u64>().unwrap();
                         }
 
-                        // FIXME: permissions field is none for some reason
-                        // let user_permissions = message_data
-                        //     .data
-                        //     .member
-                        //     .as_ref()
-                        //     .unwrap() // SAFETY: member is extra field, unwrap is safe
-                        //     .permissions
-                        //     .as_ref()
-                        //     .unwrap()
-                        //     .parse::<u64>()
-                        //     .unwrap();
+                        let user_permissions = message_data
+                            .data
+                            .get_author()
+                            .await
+                            .unwrap()
+                            .permissions
+                            .unwrap_or(0.to_string())
+                            .parse::<u64>()
+                            .unwrap_or(0);
+                        
+                        let msg_id = message_data.data.id.clone();
+                        let channel_id = message_data.data.channel_id.clone();
 
-                        // let msg_id = message_data.data.id.clone();
-                        // let channel_id = message_data.data.channel_id.clone();
+                        if user_permissions & required_permissions != required_permissions {
+                            utils::reply(
+                                &msg_id,
+                                &channel_id,
+                                "You are missing the required permissions for running this command",
+                            )
+                            .await;
 
-                        // if user_permissions & required_permissions != required_permissions {
-                        //     utils::reply(
-                        //         &msg_id,
-                        //         &channel_id,
-                        //         "You are missing the required permissions for running this command",
-                        //     )
-                        //     .await;
-
-                        //     return Ok(());
-                        // }
+                            return Ok(());
+                        }
 
                         let handler = handler_fn.clone();
                         if let Err(e) = handler_fn.call(message_data.data).await {

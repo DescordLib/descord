@@ -1,9 +1,10 @@
+use std::error::Error;
 use json::object;
 use nanoserde::{DeJson, SerJson};
 
 use crate::utils;
 use crate::{consts, Client};
-
+use crate::prelude::User;
 use super::allowed_mentions::AllowedMentions;
 use super::channel::Channel;
 use super::components::Component;
@@ -66,6 +67,10 @@ impl Message {
 
     pub async fn get_channel(&self) -> Result<Channel, Box<dyn std::error::Error>> {
         utils::get_channel(&self.channel_id).await
+    }
+
+    pub async fn get_author(&self) -> Result<Member, Box<dyn Error>> {
+        utils::get_member(self.guild_id.as_ref().unwrap(), &self.author.as_ref().unwrap().user_id).await
     }
 
     pub async fn delete(&self) -> bool {
