@@ -66,8 +66,7 @@ async fn message_delete_raw(_: DeletedMessage) {
     println!("message deleted");
 }
 
-#[command]
-#[permissions = "administrator"]
+#[command(permissions = "administrator")]
 async fn echo(msg: Message, stuff: String) {
     msg.reply(format!("Hello, {}", stuff)).await;
 }

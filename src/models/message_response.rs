@@ -51,6 +51,7 @@ pub struct Message {
     pub id: String,
 
     pub member: Option<Member>,
+
     // TODO
     // mentions, mention_roles, member, etc.
 }

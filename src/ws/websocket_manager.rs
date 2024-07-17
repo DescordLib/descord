@@ -169,19 +169,36 @@ impl WsManager {
                         let mut required_permissions: u64 = 0;
 
                         for permission in &handler_fn.permissions {
-                            required_permissions |= permission.parse::<u64>().unwrap();
+                            required_permissions |= consts::permissions::parse(&permission).expect("Invalid permission name");
                         }
 
-                        let user_permissions = message_data
+                        println!("required perms: {}", required_permissions);
+
+                        //                        let user_permissions = message_data
+                        //                            .data
+                        //                            .get_author()
+                        //                            .await
+                        //                            .unwrap()
+                        //                            .permissions
+                        //                            .unwrap_or(0.to_string())
+                        //                            .parse::<u64>()
+                        //                            .unwrap_or(0);
+
+
+                        let user_permissions: u64 = message_data
                             .data
-                            .get_author()
-                            .await
+                            .member
+                            .as_ref()
                             .unwrap()
                             .permissions
-                            .unwrap_or(0.to_string())
+                            .as_ref()
+                            .unwrap_or(&0.to_string())
                             .parse::<u64>()
                             .unwrap_or(0);
-                        
+
+                        // FIXME: why 0?
+                        println!("user perms: {user_permissions}");
+
                         let msg_id = message_data.data.id.clone();
                         let channel_id = message_data.data.channel_id.clone();
 

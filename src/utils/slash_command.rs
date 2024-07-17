@@ -158,6 +158,7 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
             .await
             .unwrap();
 
+            println!("umm: {}", json::parse(&response).unwrap().pretty(4));
             let command_id = json::parse(&response).expect("Failed to parse JSON response")["id"]
                 .as_str()
                 .expect("Failed to get 'id' from JSON response")
