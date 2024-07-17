@@ -9,7 +9,7 @@ pub struct Role {
     pub icon: Option<String>,
     pub unicode_emoji: Option<String>,
     pub position: i32,
-    pub permissions: u32,
+    pub permissions: String,
     pub managed: bool,
     pub mentionable: bool,
     pub tags: Option<RoleTags>,

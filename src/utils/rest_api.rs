@@ -10,11 +10,12 @@ use crate::models::dm_channel::DirectMessageChannel;
 use crate::models::message_edit::MessageEditData;
 use crate::models::message_response::CreateMessageData;
 
-use crate::prelude::{Member, Message};
+use crate::prelude::{Guild, Member, Message};
 use crate::prelude::{Role, User};
 
 use futures_util::TryFutureExt;
 use json::{object, JsonValue};
+use log::info;
 use nanoserde::{DeJson, SerJson};
 use reqwest::header::HeaderValue;
 use reqwest::{header::HeaderMap, Client, Error, Method, Response, StatusCode};
@@ -91,12 +92,20 @@ pub async fn reply(
     Message::deserialize_json(&resp).unwrap()
 }
 
+pub async fn fetch_guild(guild_id: &str) -> Result<Guild, Box<dyn std::error::Error>> {
+    let url = format!("guilds/{guild_id}");
+    let resp = request(Method::GET, &url, None).await.text().await?;
+    Guild::deserialize_json(&resp).map_err(|e| e.into())
+}
+
 pub async fn fetch_channel(channel_id: &str) -> Result<Channel, Box<dyn std::error::Error>> {
     let url = format!("channels/{channel_id}");
     let resp = request(Method::GET, &url, None).await.text().await?;
-    let mut channel = Channel::deserialize_json(&resp)?;
-    channel.mention = format!("<#{}>", channel.id);
-    Ok(channel)
+    let mut channel = Channel::deserialize_json(&resp).map_err(|e| e.into());
+    if let Ok(channel) = &mut channel {
+        channel.mention = format!("<#{}>", channel.id);
+    }
+    channel
 }
 
 pub async fn fetch_user(user_id: &str) -> Result<User, Box<dyn std::error::Error>> {
@@ -170,25 +179,40 @@ pub async fn react(channel_id: &str, message_id: &str, emoji: &str) {
     request(Method::PUT, &url, None).await;
 }
 
-pub async fn fetch_message(channel_id: &str, message_id: &str) -> Message {
+pub async fn fetch_message(
+    channel_id: &str,
+    message_id: &str,
+) -> Result<Message, Box<dyn std::error::Error>> {
     if let Some(message) = MESSAGE_CACHE.lock().await.get(message_id).cloned() {
-        return message;
+        return Ok(message);
     }
 
     let url = format!("channels/{channel_id}/messages/{message_id}");
-
     let resp = request(Method::GET, &url, None).await.text().await.unwrap();
 
-    Message::deserialize_json(&resp).unwrap()
+    Message::deserialize_json(&resp).map_err(|e| e.into())
 }
 
-pub async fn fetch_role(guild_id: &str, role_id: &str) -> Role {
+pub async fn fetch_role(guild_id: &str, role_id: &str) -> Result<Role, Box<dyn std::error::Error>> {
     if let Some(role) = ROLE_CACHE.lock().await.get(role_id).cloned() {
-        return role;
+        info!("Role cache hit");
+        return Ok(role);
     }
-    let url = format!("guilds/{guild_id}/roles/{role_id}");
+    let url = format!("guilds/{guild_id}/roles");
     let resp = request(Method::GET, &url, None).await.text().await.unwrap();
-    Role::deserialize_json(&resp).unwrap()
+    let roles: Vec<Role> = DeJson::deserialize_json(&resp).unwrap();
+    let mut answer = None;
+    for role in &roles {
+        ROLE_CACHE.lock().await.put(role.id.clone(), role.clone());
+        if role.id == role_id {
+            answer = Some(role.clone());
+        }
+    }
+    if let Some(answer) = answer {
+        Ok(answer)
+    } else {
+        Err("Role not found".into())
+    }
 }
 
 fn get_headers() -> HeaderMap {

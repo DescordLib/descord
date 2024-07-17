@@ -1,10 +1,10 @@
+use super::message_response::CreateMessageData;
+use super::{channel::Channel, user::User};
 use crate::consts::DISCORD_CDN;
+use crate::prelude::Role;
 use crate::{prelude::ImageFormat, utils};
 use nanoserde::{DeJson, SerJson};
 use reqwest::Method;
-
-use super::message_response::CreateMessageData;
-use super::{channel::Channel, user::User};
 
 #[derive(DeJson, SerJson, Debug, Clone)]
 pub struct Guild {
@@ -30,10 +30,10 @@ pub struct Guild {
     pub mfa_level: usize,
     pub application_id: Option<String>,
     pub system_channel_id: Option<String>,
-    pub system_channel_flag: usize,
+    pub system_channel_flag: Option<usize>,
     pub rules_channel_id: Option<String>,
     #[nserde(default)]
-    pub max_members: usize,
+    pub max_members: Option<usize>,
     pub vanity_url_code: Option<String>,
     #[nserde(rename = "banner")]
     pub banner_hash: Option<String>,
@@ -115,25 +115,39 @@ pub struct PartialGuild {
 
 #[derive(DeJson, SerJson, Debug, Clone)]
 pub struct Member {
-    pub roles: Vec<String>,
-    pub mute: Option<bool>,
-    pub joined_at: String,
-    pub deaf: Option<bool>,
-    pub is_pending: Option<bool>,
-    pub permissions: Option<String>,
     pub user: Option<User>,
+    pub nick: Option<String>,
     #[nserde(rename = "avatar")]
     pub guild_avatar_hash: Option<String>,
-    pub flags: Option<usize>,
+    pub roles: Vec<String>,
+    pub joined_at: String,
     pub premium_since: Option<String>,
-    pub nick: Option<String>,
+    pub deaf: bool,
+    pub mute: bool,
+    pub flags: usize,
+    #[nserde(default)]
+    pub pending: Option<bool>,
+    pub permissions: Option<String>,
+    #[nserde(rename = "communication_disabled_until")]
+    pub timeout_until: Option<String>,
+    // #[nserde(rename = "avatar_decoration_data")]
+    // pub avatar_decoration: Option<AvatarDecorationData>,
     #[nserde(default)]
     pub mention: String,
 }
 
 impl Guild {
-    pub async fn fetch_member(&self, user_id: &str) -> Option<Member> {
-        Some(utils::fetch_member(&self.id, user_id).await.ok()?)
+    pub async fn fetch_member(&self, user_id: &str) -> Result<Member, Box<dyn std::error::Error>> {
+        utils::fetch_member(&self.id, user_id).await
+    }
+
+    pub async fn fetch_role(&self, role_id: &str) -> Result<Role, Box<dyn std::error::Error>> {
+        utils::fetch_role(&self.id, role_id).await
+    }
+
+    pub async fn default_role(&self) -> Result<Role, Box<dyn std::error::Error>> {
+        println!("Fetching default role for guild {}", self.id);
+        utils::fetch_role(&self.id, &self.id).await
     }
 }
 

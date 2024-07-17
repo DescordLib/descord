@@ -24,3 +24,4 @@ reqwest = "0.11.26"
 tokio = { version = "1.36.0", features = ["net", "sync", "time", "rt", "rt-multi-thread", "tokio-macros", "macros"] }
 tokio-tungstenite = { version = "0.21.0", features = ["native-tls"] }
 thiserror = "1.0.58"
+chrono = "0.4.38"

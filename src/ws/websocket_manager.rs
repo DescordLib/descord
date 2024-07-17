@@ -12,7 +12,7 @@ use crate::models::interaction::{
 };
 use crate::models::ready_response::ReadyResponse;
 use crate::models::*;
-use crate::utils::request;
+use crate::utils::{fetch_channel, fetch_guild, fetch_member, request};
 use deleted_message_response::DeletedMessageResponse;
 use message_response::MessageResponse;
 use reaction_response::ReactionResponse;
@@ -174,33 +174,40 @@ impl WsManager {
                                 .expect("Invalid permission name");
                         }
 
-                        let user_permissions: u64 = message_data
-                            .data
-                            .member
-                            .as_ref()
-                            .unwrap()
-                            .permissions
-                            .as_ref()
-                            .unwrap_or(&0.to_string())
-                            .parse::<u64>()
-                            .unwrap_or(0);
-
                         let msg_id = message_data.data.id.clone();
                         let channel_id = message_data.data.channel_id.clone();
 
-                        if user_permissions & required_permissions != required_permissions {
-                            utils::reply(
-                                &msg_id,
-                                &channel_id,
-                                "You are missing the required permissions for running this command",
+                        if required_permissions != 0 {
+                            let channel = fetch_channel(&channel_id).await.unwrap();
+                            let guild = fetch_guild(channel.guild_id.as_ref().unwrap())
+                                .await
+                                .unwrap();
+                            let member = fetch_member(
+                                channel.guild_id.as_ref().unwrap(),
+                                message_data.data.author.as_ref().unwrap().user_id.as_str(),
                             )
-                            .await;
+                            .await
+                            .unwrap();
+                            let user_permissions: u64 =
+                                utils::fetch_permissions(&member, &guild, Some(&channel)).await;
 
-                            return Ok(());
+                            info!("user_permissions: {}", user_permissions);
+                            info!("required_permissions: {}", required_permissions);
+
+                            if user_permissions & required_permissions != required_permissions {
+                                utils::reply(
+                                    &msg_id,
+                                    &channel_id,
+                                    "You are missing the required permissions for running this command",
+                                )
+                                    .await;
+
+                                return Ok(());
+                            }
                         }
 
                         let handler = handler_fn.clone();
-                        if let Err(e) = handler_fn.call(message_data.data).await {
+                        if let Err(e) = handler_fn.call(message_data.data.clone()).await {
                             utils::reply(&msg_id, &channel_id, e.to_string()).await;
                         }
 

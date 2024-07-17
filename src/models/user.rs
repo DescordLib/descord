@@ -3,7 +3,7 @@ use nanoserde::{DeJson, SerJson};
 
 use crate::consts::*;
 
-#[derive(DeJson, SerJson, Debug, Clone)]
+#[derive(DeJson, SerJson, Debug, Clone, Default)]
 pub struct User {
     #[nserde(default)]
     pub verified: bool,

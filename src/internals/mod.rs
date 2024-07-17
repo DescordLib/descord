@@ -71,6 +71,8 @@ implemented_enum! {
         Reaction,
         GuildCreate,
         Interaction,
+        RoleDelete,
+        RoleEvent
     }
 }
 

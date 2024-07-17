@@ -32,7 +32,7 @@ impl Reaction {
         utils::fetch_user(&self.user_id).await
     }
 
-    pub async fn get_message(&self) -> Message {
+    pub async fn get_message(&self) -> Result<Message, Box<dyn std::error::Error>> {
         utils::fetch_message(&self.channel_id, &self.message_id).await
     }
 

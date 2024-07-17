@@ -125,7 +125,7 @@ async fn reaction_add(reaction: Reaction) {
         return;
     }
 
-    let msg = reaction.get_message().await;
+    let msg = reaction.get_message().await.unwrap();
     let (counter_message, count) = msg.content.split_once(" ").unwrap();
     let mut count = count.parse::<isize>().unwrap();
 
