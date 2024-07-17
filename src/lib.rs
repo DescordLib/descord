@@ -34,7 +34,8 @@ pub mod prelude {
             channel::*, channel::*, component_builder::*, components::*, embed::*,
             embed_builder::*, guild::*, interaction::*, message_edit::MessageEditData,
             message_response::CreateMessageData, message_response::Message,
-            reaction_response::Reaction, ready_response::*, user::User,
+            reaction_response::Reaction, ready_response::*, role::Role, role_response::*,
+            user::User,
         },
         Payload,
     };

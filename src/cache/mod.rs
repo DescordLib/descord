@@ -3,8 +3,9 @@ use std::num::NonZeroUsize;
 use lru::LruCache;
 use tokio::sync::Mutex;
 
-use crate::consts::{MESSAGE_CACHE_SIZE, RATE_LIMITS_CACHE_SIZE};
+use crate::consts::{MESSAGE_CACHE_SIZE, RATE_LIMITS_CACHE_SIZE, ROLE_CACHE_SIZE};
 use crate::prelude::Message;
+use crate::prelude::Role;
 
 #[derive(Debug)]
 pub struct RateLimitInfo {
@@ -15,6 +16,8 @@ pub struct RateLimitInfo {
 lazy_static::lazy_static! {
     pub(crate) static ref MESSAGE_CACHE: Mutex<LruCache<String, Message>>
         = Mutex::new(LruCache::new(NonZeroUsize::new(MESSAGE_CACHE_SIZE).unwrap()));
+    pub(crate) static ref ROLE_CACHE: Mutex<LruCache<String, Role>>
+        = Mutex::new(LruCache::new(NonZeroUsize::new(ROLE_CACHE_SIZE).unwrap()));
 
     pub(crate) static ref RATE_LIMITS: Mutex<LruCache<String, RateLimitInfo>>
         = Mutex::new(LruCache::new(NonZeroUsize::new(RATE_LIMITS_CACHE_SIZE).unwrap()));

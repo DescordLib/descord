@@ -25,7 +25,7 @@ fn map_param_type_to_u32(param_type: &ParamType) -> u32 {
 
 pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<String, SlashCommand> {
     let mut slash_commands = HashMap::new();
-    let bot_id = get_bot_id().await;
+    let bot_id = fetch_bot_id().await;
     let registered_commands = fetch_application_commands(&bot_id).await;
 
     for local_command in &commands {
@@ -158,7 +158,6 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
             .await
             .unwrap();
 
-            println!("umm: {}", json::parse(&response).unwrap().pretty(4));
             let command_id = json::parse(&response).expect("Failed to parse JSON response")["id"]
                 .as_str()
                 .expect("Failed to get 'id' from JSON response")

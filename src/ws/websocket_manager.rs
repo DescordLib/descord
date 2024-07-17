@@ -16,6 +16,7 @@ use crate::utils::request;
 use deleted_message_response::DeletedMessageResponse;
 use message_response::MessageResponse;
 use reaction_response::ReactionResponse;
+use role_response::*;
 
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -41,7 +42,7 @@ use crate::handlers::events::Event;
 use crate::ws::payload::Payload;
 use crate::Client;
 
-use crate::cache::MESSAGE_CACHE;
+use crate::cache::{MESSAGE_CACHE, ROLE_CACHE};
 
 type SocketWrite = Arc<Mutex<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>>;
 type SocketRead = Arc<Mutex<SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>>>;
@@ -169,21 +170,9 @@ impl WsManager {
                         let mut required_permissions: u64 = 0;
 
                         for permission in &handler_fn.permissions {
-                            required_permissions |= consts::permissions::parse(&permission).expect("Invalid permission name");
+                            required_permissions |= consts::permissions::parse(&permission)
+                                .expect("Invalid permission name");
                         }
-
-                        println!("required perms: {}", required_permissions);
-
-                        //                        let user_permissions = message_data
-                        //                            .data
-                        //                            .get_author()
-                        //                            .await
-                        //                            .unwrap()
-                        //                            .permissions
-                        //                            .unwrap_or(0.to_string())
-                        //                            .parse::<u64>()
-                        //                            .unwrap_or(0);
-
 
                         let user_permissions: u64 = message_data
                             .data
@@ -195,9 +184,6 @@ impl WsManager {
                             .unwrap_or(&0.to_string())
                             .parse::<u64>()
                             .unwrap_or(0);
-
-                        // FIXME: why 0?
-                        println!("user perms: {user_permissions}");
 
                         let msg_id = message_data.data.id.clone();
                         let channel_id = message_data.data.channel_id.clone();
@@ -256,6 +242,30 @@ impl WsManager {
                     event = Event::MessageDeleteRaw;
                     data.data.into()
                 }
+            }
+
+            Event::GuildRoleCreate => {
+                let data = RoleCreateResponse::deserialize_json(&payload.raw_json).unwrap();
+                ROLE_CACHE
+                    .lock()
+                    .await
+                    .put(data.data.role.id.clone(), data.data.role.clone());
+                data.data.into()
+            }
+
+            Event::GuildRoleUpdate => {
+                let data = RoleUpdateResponse::deserialize_json(&payload.raw_json).unwrap();
+                ROLE_CACHE
+                    .lock()
+                    .await
+                    .put(data.data.role.id.clone(), data.data.role.clone());
+                data.data.into()
+            }
+
+            Event::GuildRoleDelete => {
+                let data = RoleDeleteResponse::deserialize_json(&payload.raw_json).unwrap();
+                ROLE_CACHE.lock().await.pop(&data.data.role_id);
+                data.data.into()
             }
 
             Event::MessageReactionAdd => {

@@ -25,15 +25,15 @@ pub struct Reaction {
 
 impl Reaction {
     pub async fn get_channel(&self) -> Result<Channel, Box<dyn std::error::Error>> {
-        utils::get_channel(&self.channel_id).await
+        utils::fetch_channel(&self.channel_id).await
     }
 
     pub async fn get_user(&self) -> Result<User, Box<dyn std::error::Error>> {
-        utils::get_user(&self.user_id).await
+        utils::fetch_user(&self.user_id).await
     }
 
     pub async fn get_message(&self) -> Message {
-        utils::get_message(&self.channel_id, &self.message_id).await
+        utils::fetch_message(&self.channel_id, &self.message_id).await
     }
 
     pub async fn remove_reaction(&self) {

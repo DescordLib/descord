@@ -17,4 +17,6 @@ pub mod message_reference;
 pub mod message_response;
 pub mod reaction_response;
 pub mod ready_response;
+pub mod role;
+pub mod role_response;
 pub mod user;

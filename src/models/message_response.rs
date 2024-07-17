@@ -51,7 +51,6 @@ pub struct Message {
     pub id: String,
 
     pub member: Option<Member>,
-
     // TODO
     // mentions, mention_roles, member, etc.
 }
@@ -66,11 +65,11 @@ impl Message {
     }
 
     pub async fn get_channel(&self) -> Result<Channel, Box<dyn std::error::Error>> {
-        utils::get_channel(&self.channel_id).await
+        utils::fetch_channel(&self.channel_id).await
     }
 
     pub async fn get_author(&self) -> Result<Member, Box<dyn Error>> {
-        utils::get_member(
+        utils::fetch_member(
             self.guild_id.as_ref().unwrap(),
             &self.author.as_ref().unwrap().user_id,
         )

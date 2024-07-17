@@ -133,7 +133,7 @@ pub struct Member {
 
 impl Guild {
     pub async fn fetch_member(&self, user_id: &str) -> Option<Member> {
-        Some(utils::get_member(&self.id, user_id).await.ok()?)
+        Some(utils::fetch_member(&self.id, user_id).await.ok()?)
     }
 }
 

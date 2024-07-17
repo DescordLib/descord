@@ -194,7 +194,7 @@ impl Command {
                             } else {
                                 channel_id_str
                             };
-                        match get_channel(channel_id).await {
+                        match fetch_channel(channel_id).await {
                             Ok(channel) => args.push(if optional {
                                 Value::ChannelOption(Some(channel))
                             } else {
@@ -215,7 +215,7 @@ impl Command {
                         } else {
                             user_id_str
                         };
-                        match get_user(user_id).await {
+                        match fetch_user(user_id).await {
                             Ok(user) => args.push(if optional {
                                 Value::UserOption(Some(user))
                             } else {
@@ -325,7 +325,7 @@ impl SlashCommand {
                             } else {
                                 channel_id_str
                             };
-                        match get_channel(channel_id).await {
+                        match fetch_channel(channel_id).await {
                             Ok(channel) => args.push(if optional {
                                 Value::ChannelOption(Some(channel))
                             } else {
@@ -347,7 +347,7 @@ impl SlashCommand {
                         } else {
                             user_id_str
                         };
-                        match get_user(user_id).await {
+                        match fetch_user(user_id).await {
                             Ok(user) => args.push(if optional {
                                 Value::UserOption(Some(user))
                             } else {

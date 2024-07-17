@@ -1,4 +1,4 @@
-use crate::cache::{RateLimitInfo, ENDPOINT_BUCKET_MAP, MESSAGE_CACHE, RATE_LIMITS};
+use crate::cache::{RateLimitInfo, ENDPOINT_BUCKET_MAP, MESSAGE_CACHE, RATE_LIMITS, ROLE_CACHE};
 use crate::client::TOKEN;
 use crate::consts::API;
 use std::collections::HashMap;
@@ -10,8 +10,8 @@ use crate::models::dm_channel::DirectMessageChannel;
 use crate::models::message_edit::MessageEditData;
 use crate::models::message_response::CreateMessageData;
 
-use crate::prelude::User;
 use crate::prelude::{Member, Message};
+use crate::prelude::{Role, User};
 
 use futures_util::TryFutureExt;
 use json::{object, JsonValue};
@@ -37,7 +37,7 @@ pub async fn fetch_application_commands(bot_id: &str) -> Vec<ApplicationCommand>
     })
 }
 
-pub async fn get_bot_id() -> String {
+pub async fn fetch_bot_id() -> String {
     let response = request(Method::GET, "users/@me", None).await;
     json::parse(response.text().await.unwrap().as_str()).unwrap_or_else(|_| {
         log::error!("Failed to parse JSON response");
@@ -91,7 +91,7 @@ pub async fn reply(
     Message::deserialize_json(&resp).unwrap()
 }
 
-pub async fn get_channel(channel_id: &str) -> Result<Channel, Box<dyn std::error::Error>> {
+pub async fn fetch_channel(channel_id: &str) -> Result<Channel, Box<dyn std::error::Error>> {
     let url = format!("channels/{channel_id}");
     let resp = request(Method::GET, &url, None).await.text().await?;
     let mut channel = Channel::deserialize_json(&resp)?;
@@ -99,7 +99,7 @@ pub async fn get_channel(channel_id: &str) -> Result<Channel, Box<dyn std::error
     Ok(channel)
 }
 
-pub async fn get_user(user_id: &str) -> Result<User, Box<dyn std::error::Error>> {
+pub async fn fetch_user(user_id: &str) -> Result<User, Box<dyn std::error::Error>> {
     let url = format!("users/{}", user_id);
     let resp = request(Method::GET, &url, None).await;
     let mut user = User::deserialize_json(&resp.text().await?)?;
@@ -107,7 +107,7 @@ pub async fn get_user(user_id: &str) -> Result<User, Box<dyn std::error::Error>>
     Ok(user)
 }
 
-pub async fn get_member(
+pub async fn fetch_member(
     guild_id: &str,
     user_id: &str,
 ) -> Result<Member, Box<dyn std::error::Error>> {
@@ -141,7 +141,7 @@ pub async fn edit_message(channel_id: &str, message_id: &str, data: impl Into<Me
 
 /// Returns a new DM channel with a user (or return
 /// an existing one). Returns a `DirectMessageChannel` object.
-pub async fn get_dm(user_id: &str) -> DirectMessageChannel {
+pub async fn fetch_dm(user_id: &str) -> DirectMessageChannel {
     let url = format!("users/@me/channels");
     let data = json::stringify(object! {
         recipient_id: user_id
@@ -152,7 +152,7 @@ pub async fn get_dm(user_id: &str) -> DirectMessageChannel {
 }
 
 pub async fn send_dm(user_id: &str, data: impl Into<CreateMessageData>) {
-    let dm_channel = get_dm(user_id).await;
+    let dm_channel = fetch_dm(user_id).await;
     send(&dm_channel.id, data).await;
 }
 
@@ -170,7 +170,7 @@ pub async fn react(channel_id: &str, message_id: &str, emoji: &str) {
     request(Method::PUT, &url, None).await;
 }
 
-pub async fn get_message(channel_id: &str, message_id: &str) -> Message {
+pub async fn fetch_message(channel_id: &str, message_id: &str) -> Message {
     if let Some(message) = MESSAGE_CACHE.lock().await.get(message_id).cloned() {
         return message;
     }
@@ -180,6 +180,15 @@ pub async fn get_message(channel_id: &str, message_id: &str) -> Message {
     let resp = request(Method::GET, &url, None).await.text().await.unwrap();
 
     Message::deserialize_json(&resp).unwrap()
+}
+
+pub async fn fetch_role(guild_id: &str, role_id: &str) -> Role {
+    if let Some(role) = ROLE_CACHE.lock().await.get(role_id).cloned() {
+        return role;
+    }
+    let url = format!("guilds/{guild_id}/roles/{role_id}");
+    let resp = request(Method::GET, &url, None).await.text().await.unwrap();
+    Role::deserialize_json(&resp).unwrap()
 }
 
 fn get_headers() -> HeaderMap {
