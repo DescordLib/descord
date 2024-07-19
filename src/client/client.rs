@@ -19,7 +19,9 @@ use log::{error, info};
 // SAFETY: These will always be valid if accessed from an event.
 lazy_static::lazy_static! {
     pub(crate) static ref BOT_ID: Mutex<Option<String>> = Mutex::new(None);
+    pub(crate) static ref SESSION_ID: Mutex<Option<String>> = Mutex::new(None);
     pub(crate) static ref TOKEN: Mutex<Option<String>> = Mutex::new(None);
+    pub(crate) static ref RESUME_GATEWAY_URL: Mutex<Option<String>> = Mutex::new(None);
 }
 
 pub struct Client {
@@ -50,7 +52,7 @@ impl Client {
         }
     }
 
-    pub async fn login(self) {
+    pub async fn login(mut self) {
         self.ws
             .connect(
                 self.intents,

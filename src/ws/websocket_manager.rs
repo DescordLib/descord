@@ -1,32 +1,36 @@
-use guild::{GuildCreate, GuildCreateResponse};
-use log::*;
-use nanoserde::{DeJson, SerJson};
-use reqwest::Method;
-
-use crate::client::BOT_ID;
-use crate::{internals::*, utils};
-
-use crate::models::interaction::{
-    Interaction, InteractionAutoCompleteChoice, InteractionAutoCompleteChoicePlaceholder,
-    InteractionAutoCompleteChoices, InteractionResponsePayload,
-};
-use crate::models::ready_response::ReadyResponse;
-use crate::models::*;
-use crate::utils::{fetch_channel, fetch_guild, fetch_member, request};
-use deleted_message_response::DeletedMessageResponse;
-use message_response::MessageResponse;
-use reaction_response::ReactionResponse;
-use role_response::*;
-
+// std
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 use std::{clone, thread};
 
-use futures_util::stream::{SplitSink, SplitStream};
-use futures_util::{future, pin_mut, SinkExt, StreamExt};
+use guild::{GuildCreate, GuildCreateResponse};
+use log::*;
+use nanoserde::{DeJson, SerJson};
+use reqwest::{Method, Url};
 
+use crate::client::BOT_ID;
+use crate::client::RESUME_GATEWAY_URL;
+use crate::client::SESSION_ID;
+use crate::client::TOKEN;
+use crate::{internals::*, utils};
+
+// models
+use crate::models::interaction::{
+    Interaction, InteractionAutoCompleteChoice, InteractionAutoCompleteChoicePlaceholder,
+    InteractionAutoCompleteChoices, InteractionResponsePayload,
+};
+use crate::models::ready_response::ReadyResponse;
+use crate::models::*;
+
+use deleted_message_response::DeletedMessageResponse;
+use message_response::MessageResponse;
+use misc::Reconnect;
+use reaction_response::ReactionResponse;
+use role_response::*;
+
+// Tokio & Future
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
@@ -36,9 +40,13 @@ use tokio_tungstenite::tungstenite::{Message, Result};
 use tokio_tungstenite::MaybeTlsStream;
 use tokio_tungstenite::{connect_async, WebSocketStream};
 
+use futures_util::stream::{SplitSink, SplitStream};
+use futures_util::{future, pin_mut, SinkExt, StreamExt};
+
 use crate::consts::opcode::OpCode;
 use crate::consts::{self, payloads, InteractionCallbackType, InteractionType};
 use crate::handlers::events::Event;
+use crate::utils::{fetch_channel, fetch_guild, fetch_member, request};
 use crate::ws::payload::Payload;
 use crate::Client;
 
@@ -50,6 +58,7 @@ type SocketRead = Arc<Mutex<SplitStream<WebSocketStream<MaybeTlsStream<TcpStream
 pub struct WsManager {
     token: String,
     socket: (SocketWrite, SocketRead),
+    sequence: Arc<Mutex<usize>>,
 }
 
 impl WsManager {
@@ -62,11 +71,12 @@ impl WsManager {
         Ok(Self {
             token: token.to_owned(),
             socket: (write, read),
+            sequence: Arc::new(Mutex::new(0)),
         })
     }
 
     pub async fn connect<'a>(
-        &'a self,
+        &'a mut self,
         intents: u32,
         event_handlers: Arc<HashMap<Event, EventHandler>>,
         commands: Arc<HashMap<String, Command>>,
@@ -97,39 +107,58 @@ impl WsManager {
             }
         }
 
-        while let Some(Ok(Message::Text(body))) = self.socket.1.lock().await.next().await {
-            let Some(payload) = Payload::parse(&body) else {
-                error!("Failed to parse json");
-                continue;
-            };
+        // while let e @ Some(Ok(Message::Text(ref body))) = self.socket.1.lock().await.next().await {
 
-            info!("Opcode: {:?}", payload.operation_code);
-            match payload.operation_code {
-                OpCode::Dispatch => {
-                    info!(
-                        "received {} event",
-                        payload
-                            .type_name
-                            .as_ref()
-                            .map(|i| i.as_str())
-                            .unwrap_or("Unknown"),
-                        // json::parse(&payload.raw_json).unwrap().pretty(4)
-                    );
+        // TODO: what if its an internet connection problem?
+        // will handle that in the future
+        let err = loop {
+            let x = self.socket.1.lock().await.next().await;
+            if let Some(Ok(Message::Text(body))) = x {
+                let Some(payload) = Payload::parse(&body) else {
+                    error!("Failed to parse json");
+                    continue;
+                };
 
-                    let event_handlers = Arc::clone(&event_handlers);
-                    let commands = Arc::clone(&commands);
-                    let slash_commands = Arc::clone(&slash_commands);
+                info!("Opcode: {:?}", payload.operation_code);
+                match payload.operation_code {
+                    OpCode::Dispatch => {
+                        let current_seq = payload.sequence.unwrap_or(0);
+                        *self.sequence.lock().await = current_seq;
+                        info!(
+                            "received {} event, sequence: {current_seq}",
+                            payload
+                                .type_name
+                                .as_ref()
+                                .map(|i| i.as_str())
+                                .unwrap_or("Unknown"),
+                            // For Debugging
+                            // json::parse(&payload.raw_json).unwrap().pretty(4)
+                        );
 
-                    tokio::spawn(async move {
-                        Self::dispatch_event(payload, event_handlers, commands, slash_commands)
+                        let event_handlers = Arc::clone(&event_handlers);
+                        let commands = Arc::clone(&commands);
+                        let slash_commands = Arc::clone(&slash_commands);
+                        let seq = Arc::clone(&self.sequence);
+
+                        tokio::spawn(async move {
+                            Self::dispatch_event(
+                                payload,
+                                event_handlers,
+                                commands,
+                                slash_commands,
+                                seq,
+                            )
                             .await
                             .expect("Failed to parse json response");
-                    });
-                }
+                        });
+                    }
 
-                _ => {}
+                    _ => {}
+                }
+            } else {
+                break x.unwrap().unwrap_err();
             }
-        }
+        };
 
         info!("Exiting...");
 
@@ -141,6 +170,7 @@ impl WsManager {
         event_handlers: Arc<HashMap<Event, EventHandler>>,
         commands: Arc<HashMap<String, Command>>,
         slash_commands: Arc<HashMap<String, SlashCommand>>,
+        seq: Arc<Mutex<usize>>,
     ) -> Result<(), nanoserde::DeJsonErr> {
         let mut event = match Event::from_str(payload.type_name.as_ref().unwrap().as_str()) {
             Ok(event) => event,
@@ -153,7 +183,11 @@ impl WsManager {
         let data = match event {
             Event::Ready => {
                 let data = ReadyResponse::deserialize_json(&payload.raw_json).unwrap();
+
+                *RESUME_GATEWAY_URL.lock().unwrap() = Some(data.data.resume_gateway_url.clone());
+                *SESSION_ID.lock().unwrap() = Some(data.data.session_id.clone());
                 *BOT_ID.lock().unwrap() = Some(data.data.user.id.clone());
+
                 data.data.into()
             }
 
@@ -249,6 +283,13 @@ impl WsManager {
                     event = Event::MessageDeleteRaw;
                     data.data.into()
                 }
+            }
+
+            Event::Reconnect => {
+                Self::reconnect(seq).await;
+
+                let data = Reconnect::deserialize_json(&payload.raw_json).unwrap();
+                data.into()
             }
 
             Event::GuildRoleCreate => {
@@ -354,6 +395,28 @@ impl WsManager {
         Ok(())
     }
 
+    async fn reconnect(seq: Arc<Mutex<usize>>) {
+        info!("Reopening the connection...");
+
+        let resume_gateway_url = RESUME_GATEWAY_URL.lock().unwrap().as_ref().unwrap().clone();
+        let token = TOKEN.lock().unwrap().as_ref().unwrap().clone();
+        let session_id = SESSION_ID.lock().unwrap().as_ref().unwrap().clone();
+        let seq = *seq.lock().await;
+
+        let (mut socket, _) = connect_async(Url::parse(&resume_gateway_url).unwrap().as_str())
+            .await
+            .unwrap();
+
+        socket
+            .send(Message::Text(json::stringify(payloads::resume(
+                &token,
+                &session_id,
+                seq,
+            ))))
+            .await
+            .expect("Failed to send resume event");
+    }
+
     async fn heartbeat_start(
         heartbeat_interval: Duration,
         writer: SocketWrite,
@@ -369,6 +432,8 @@ impl WsManager {
                 .send(message)
                 .await
                 .expect("Failed to send heartbeat");
+
+            // TODO: if it fails, reconnect
 
             tokio::time::sleep(heartbeat_interval).await;
             last_sequence += 1;

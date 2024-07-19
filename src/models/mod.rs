@@ -20,3 +20,4 @@ pub mod ready_response;
 pub mod role;
 pub mod role_response;
 pub mod user;
+pub mod misc;

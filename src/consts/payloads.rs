@@ -22,8 +22,8 @@ pub fn identify(token: &str, intents: u32) -> JsonValue {
             token: token,
             properties: {
                 os: "linux",
-                browser: "disco",
-                device: "disco"
+                browser: "descord",
+                device: "descord"
             },
             intents: intents
         }
