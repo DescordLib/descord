@@ -21,3 +21,4 @@ pub mod role;
 pub mod role_response;
 pub mod user;
 pub mod misc;
+pub mod attachment;

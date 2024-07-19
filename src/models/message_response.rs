@@ -3,6 +3,7 @@ use nanoserde::{DeJson, SerJson};
 use std::error::Error;
 
 use super::allowed_mentions::AllowedMentions;
+use super::attachment::Attachment;
 use super::channel::Channel;
 use super::components::Component;
 use super::guild::Member;
@@ -51,6 +52,8 @@ pub struct Message {
     pub id: String,
 
     pub member: Option<Member>,
+
+    pub attachments: Vec<Attachment>,
     // TODO
     // mentions, mention_roles, member, etc.
 }
@@ -102,6 +105,7 @@ pub struct CreateMessageData {
     pub embeds: Vec<Embed>,
     pub allowed_mentions: Option<AllowedMentions>,
     pub flags: Option<u32>,
+    pub attachments: Vec<Attachment>,
 
     /// Column<Row<Component>>
     pub components: Vec<Vec<Component>>,
@@ -167,6 +171,24 @@ impl From<Embed> for CreateMessageData {
         CreateMessageData {
             embeds: vec![value],
             ..Default::default()
+        }
+    }
+}
+
+impl From<Vec<Attachment>> for CreateMessageData {
+    fn from(value: Vec<Attachment>) -> Self {
+        CreateMessageData {
+            attachments: value,
+            ..Default::default()
+        }
+    }
+}
+
+impl From<Attachment> for CreateMessageData {
+    fn from(value: Attachment) -> Self {
+        CreateMessageData {
+            attachments: vec![value],
+            ..Default::default
         }
     }
 }
