@@ -1,5 +1,5 @@
 # descord
-Descord is a discord api wrapper.
+Descord is a minimal, easy to use discord api wrapper.
 
 ## Example
 ```rust
