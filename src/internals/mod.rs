@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use crate::handlers::events::Event;
 use crate::models::channel::Channel;
 use crate::models::deleted_message_response::DeletedMessage;
-use crate::models::misc::Reconnect;
 use crate::models::interaction::{Interaction, InteractionData};
+use crate::models::misc::Reconnect;
 use crate::models::reaction_response::Reaction;
 use crate::prelude::*;
 use crate::utils::*;
@@ -14,8 +14,10 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum DescordError {
-    #[error("Missing required argu
-ment for command: {0}")]
+    #[error(
+        "Missing required argu
+ment for command: {0}"
+    )]
     MissingRequiredArgument(String),
 }
 

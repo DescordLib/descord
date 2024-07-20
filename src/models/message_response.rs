@@ -188,7 +188,7 @@ impl From<Attachment> for CreateMessageData {
     fn from(value: Attachment) -> Self {
         CreateMessageData {
             attachments: vec![value],
-            ..Default::default
+            ..Default::default()
         }
     }
 }

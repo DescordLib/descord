@@ -1,5 +1,6 @@
 mod allowed_mentions;
 pub mod application_command;
+pub mod attachment;
 pub mod author;
 pub mod channel;
 pub mod component_builder;
@@ -15,10 +16,9 @@ pub mod interaction;
 pub mod message_edit;
 pub mod message_reference;
 pub mod message_response;
+pub mod misc;
 pub mod reaction_response;
 pub mod ready_response;
 pub mod role;
 pub mod role_response;
 pub mod user;
-pub mod misc;
-pub mod attachment;
