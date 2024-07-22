@@ -1,3 +1,4 @@
+//! Descord is a minimal and easy to use discord api wrapper
 #![allow(unused)]
 
 mod client;

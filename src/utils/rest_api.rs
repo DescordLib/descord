@@ -1,4 +1,4 @@
-use crate::cache::{RateLimitInfo, ENDPOINT_BUCKET_MAP, MESSAGE_CACHE, RATE_LIMITS, ROLE_CACHE};
+use crate::cache::*;
 use crate::client::TOKEN;
 use crate::consts::API;
 use std::collections::HashMap;
@@ -93,9 +93,18 @@ pub async fn reply(
 }
 
 pub async fn fetch_guild(guild_id: &str) -> Result<Guild, Box<dyn std::error::Error>> {
+    if let Some(guild) = GUILD_CACHE.lock().await.get(guild_id).cloned() {
+        return Ok(guild);
+    }
+
     let url = format!("guilds/{guild_id}");
     let resp = request(Method::GET, &url, None).await.text().await?;
-    Guild::deserialize_json(&resp).map_err(|e| e.into())
+    if let Ok(guild) = Guild::deserialize_json(&resp) {
+        GUILD_CACHE.lock().await.put(guild_id.to_string(), guild.clone());
+        Ok(guild)
+    } else {
+        Err("Failed to deserialize JSON".into())
+    }
 }
 
 pub async fn fetch_channel(channel_id: &str) -> Result<Channel, Box<dyn std::error::Error>> {
