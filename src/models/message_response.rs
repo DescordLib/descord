@@ -6,9 +6,9 @@ use super::allowed_mentions::AllowedMentions;
 use super::attachment::Attachment;
 use super::channel::Channel;
 use super::components::Component;
+use super::embed::Embed;
 use super::guild::Member;
 use super::message_edit::MessageEditData;
-use super::{author::Author, embed::Embed, message_reference::MessageReference};
 use crate::prelude::User;
 use crate::utils;
 use crate::{consts, Client};
@@ -44,9 +44,9 @@ pub struct Message {
     pub channel_id: String,
     #[nserde(default)]
     pub embeds: Vec<Embed>,
-    pub author: Option<Author>,
+    pub author: Option<User>,
     #[nserde(default)]
-    pub referenced_message: Option<MessageReference>,
+    pub referenced_message: Option<Box<Message>>,
 
     pub guild_id: Option<String>,
     pub id: String,
@@ -74,7 +74,7 @@ impl Message {
     pub async fn get_author(&self) -> Result<Member, Box<dyn Error>> {
         utils::fetch_member(
             self.guild_id.as_ref().unwrap(),
-            &self.author.as_ref().unwrap().user_id,
+            &self.author.as_ref().unwrap().id,
         )
         .await
     }

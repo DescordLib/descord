@@ -1,7 +1,6 @@
 mod allowed_mentions;
 pub mod application_command;
 pub mod attachment;
-pub mod author;
 pub mod channel;
 pub mod component_builder;
 pub mod components;
@@ -14,7 +13,6 @@ pub mod guild;
 pub mod guild_create;
 pub mod interaction;
 pub mod message_edit;
-pub mod message_reference;
 pub mod message_response;
 pub mod misc;
 pub mod reaction_response;

@@ -51,6 +51,8 @@ use crate::ws::payload::Payload;
 use crate::Client;
 
 use crate::cache::{MESSAGE_CACHE, ROLE_CACHE};
+use crate::consts::permissions::ADMINISTRATOR;
+use crate::prelude::{Channel, Guild};
 
 type SocketWrite = Arc<Mutex<SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>>>;
 type SocketRead = Arc<Mutex<SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>>>;
@@ -216,17 +218,14 @@ impl WsManager {
                             let guild = fetch_guild(channel.guild_id.as_ref().unwrap())
                                 .await
                                 .unwrap();
-                            let member = fetch_member(
-                                channel.guild_id.as_ref().unwrap(),
-                                message_data.data.author.as_ref().unwrap().user_id.as_str(),
+                            let data = message_data.data.clone();
+                            let user_permissions: u64 = Self::fetch_permissions(
+                                data.member.unwrap().roles,
+                                data.author.unwrap().id,
+                                &guild,
+                                Some(&channel),
                             )
-                            .await
-                            .unwrap();
-                            let user_permissions: u64 =
-                                utils::fetch_permissions(&member, &guild, Some(&channel)).await;
-
-                            info!("user_permissions: {}", user_permissions);
-                            info!("required_permissions: {}", required_permissions);
+                            .await;
 
                             if user_permissions & required_permissions != required_permissions {
                                 utils::reply(
@@ -438,49 +437,6 @@ impl WsManager {
             tokio::time::sleep(heartbeat_interval).await;
             last_sequence += 1;
         }
-
-        // let socket = Arc::clone(&self.socket);
-        // let resume_gateway_url = Arc::clone(&self.resume_gateway_url);
-        // let session_id = Arc::clone(&self.session_id);
-        // let last_sequence = Arc::clone(&self.last_sequence);
-        // let token = self.token.clone();
-
-        // loop {
-        // info!("sending heartbeat");
-        // if let Err(tungstenite::Error::AlreadyClosed) =
-        //     socket
-        //         .lock()
-        //         .unwrap()
-        //         .send(Message::Text(json::stringify(payloads::heartbeat(
-        //             last_sequence.lock().unwrap().unwrap_or(0),
-        //         ))))
-        // {
-        //     warn!("connection closed");
-        //     info!("Reopening the connection...");
-        //     let (mut socket, _response) = connect(
-        //         Url::parse(
-        //             resume_gateway_url
-        //                 .lock()
-        //                 .unwrap()
-        //                 .as_ref()
-        //                 .unwrap()
-        //                 .as_str(),
-        //         )
-        //         .unwrap(),
-        //     )
-        //     .unwrap();
-
-        //     socket
-        //         .send(Message::Text(json::stringify(payloads::resume(
-        //             &token,
-        //             session_id.lock().unwrap().as_ref().unwrap().as_str(),
-        //             last_sequence.lock().unwrap().unwrap(),
-        //         ))))
-        //         .unwrap();
-        // }
-
-        // thread::sleep(heartbeat_interval);
-        // }
     }
 
     async fn identify(&self, intents: u32) -> Result<()> {
@@ -490,5 +446,60 @@ impl WsManager {
 
     async fn send_text(&self, msg: String) -> Result<()> {
         self.socket.0.lock().await.send(Message::Text(msg)).await
+    }
+
+    async fn fetch_permissions(
+        roles: Vec<String>,
+        id: String,
+        guild: &Guild,
+        channel: Option<&Channel>,
+    ) -> u64 {
+        // Check if member is the guild owner
+        if guild.owner_id == id {
+            return ADMINISTRATOR;
+        }
+
+        // Start with default role permissions or bot-specific permissions
+        let mut base_permissions = guild
+            .default_role()
+            .await
+            .unwrap()
+            .permissions
+            .parse::<u64>()
+            .unwrap();
+
+        // Aggregate permissions from member's roles
+        for role_id in &roles {
+            if let Some(role) = guild.fetch_role(role_id).await.ok() {
+                base_permissions |= role.permissions.parse::<u64>().unwrap();
+            }
+        }
+
+        // Administrator check
+        if base_permissions & ADMINISTRATOR == ADMINISTRATOR {
+            return ADMINISTRATOR;
+        }
+
+        // Apply permission overwrites if channel is provided
+        if let Some(channel) = channel {
+            if let Some(overwrites) = &channel.permission_overwrites {
+                for overwrite in overwrites {
+                    let allow = overwrite.allow.parse::<u64>().unwrap();
+                    let deny = overwrite.deny.parse::<u64>().unwrap();
+
+                    if overwrite.overwrite_type == 1 && overwrite.id == id {
+                        // Member specific overwrites
+                        base_permissions &= !deny;
+                        base_permissions |= allow;
+                    } else if overwrite.overwrite_type == 0 && roles.contains(&overwrite.id) {
+                        // Role specific overwrites
+                        base_permissions &= !deny;
+                        base_permissions |= allow;
+                    }
+                }
+            }
+        }
+
+        base_permissions
     }
 }

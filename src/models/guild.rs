@@ -146,7 +146,6 @@ impl Guild {
     }
 
     pub async fn default_role(&self) -> Result<Role, Box<dyn std::error::Error>> {
-        println!("Fetching default role for guild {}", self.id);
         utils::fetch_role(&self.id, &self.id).await
     }
 }

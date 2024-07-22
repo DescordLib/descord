@@ -14,6 +14,6 @@ pub struct Attachment {
     pub width: Option<u32>,
     pub ephemeral: Option<bool>,
     pub duration_secs: Option<f32>,
-    pub waveform: String,
+    pub waveform: Option<String>,
     pub flags: Option<usize>,
 }
