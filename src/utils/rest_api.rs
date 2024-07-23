@@ -100,7 +100,10 @@ pub async fn fetch_guild(guild_id: &str) -> Result<Guild, Box<dyn std::error::Er
     let url = format!("guilds/{guild_id}");
     let resp = request(Method::GET, &url, None).await.text().await?;
     if let Ok(guild) = Guild::deserialize_json(&resp) {
-        GUILD_CACHE.lock().await.put(guild_id.to_string(), guild.clone());
+        GUILD_CACHE
+            .lock()
+            .await
+            .put(guild_id.to_string(), guild.clone());
         Ok(guild)
     } else {
         Err("Failed to deserialize JSON".into())

@@ -3,9 +3,11 @@ use std::num::NonZeroUsize;
 use lru::LruCache;
 use tokio::sync::Mutex;
 
-use crate::consts::{GUILD_CACHE_SIZE, MESSAGE_CACHE_SIZE, RATE_LIMITS_CACHE_SIZE, ROLE_CACHE_SIZE};
-use crate::prelude::{Guild, Message};
+use crate::consts::{
+    GUILD_CACHE_SIZE, MESSAGE_CACHE_SIZE, RATE_LIMITS_CACHE_SIZE, ROLE_CACHE_SIZE,
+};
 use crate::prelude::Role;
+use crate::prelude::{Guild, Message};
 
 #[derive(Debug)]
 pub struct RateLimitInfo {

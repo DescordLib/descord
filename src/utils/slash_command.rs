@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 
 use log::{error, info};
-use nanoserde::DeJson;
 use reqwest::Method;
 
 use super::*;
 use crate::consts::permissions as perms;
 use crate::internals::*;
 
-use crate::models::application_command::ApplicationCommand;
+use crate::models::application_command::{ApplicationCommand, ApplicationCommandOption};
 
 fn map_param_type_to_u32(param_type: &ParamType) -> u32 {
     match param_type {
@@ -20,8 +19,42 @@ fn map_param_type_to_u32(param_type: &ParamType) -> u32 {
     }
 }
 
-// TODO for fireplank, add checks for permissions
-// TODO fix this stupid looking code
+#[derive(Debug, PartialEq, Eq)]
+struct CommandOption {
+    name: String,
+    description: String,
+    r#type: u32,
+    required: bool,
+    autocomplete: bool,
+}
+
+impl CommandOption {
+    fn from_local(
+        name: &str,
+        description: &str,
+        type_: &ParamType,
+        required: bool,
+        autocomplete: Option<AutoCompleteFn>,
+    ) -> Self {
+        CommandOption {
+            name: name.to_string(),
+            description: description.to_string(),
+            r#type: map_param_type_to_u32(type_),
+            required,
+            autocomplete: autocomplete.is_some(),
+        }
+    }
+
+    fn from_registered(opt: &ApplicationCommandOption) -> Self {
+        CommandOption {
+            name: opt.name.clone(),
+            description: opt.description.clone(),
+            r#type: opt.type_,
+            required: opt.required.unwrap_or(false),
+            autocomplete: opt.autocomplete.unwrap_or(false),
+        }
+    }
+}
 
 pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<String, SlashCommand> {
     let mut slash_commands = HashMap::new();
@@ -35,84 +68,50 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
             permissions |= permission;
         }
 
-        let options = local_command
-            .fn_param_names
+        let local_options = local_command
+            .fn_sig
             .iter()
-            .zip(local_command.fn_param_autocomplete.iter())
-            .zip(local_command.fn_param_renames.iter())
-            .zip(local_command.fn_sig.iter())
-            .zip(local_command.fn_param_descriptions.iter())
-            .zip(local_command.optional_params.iter())
-            .map(
-                |(((((name, autocomplete), rename), type_), description), optional)| {
-                    let name = rename.as_ref().unwrap_or_else(|| name);
-                    json::object! {
-                        name: name.clone(),
-                        description: description.clone(),
-                        type: map_param_type_to_u32(type_),
-                        required: !optional,
-                        autocomplete: autocomplete.is_some(),
-                    }
-                },
-            )
+            .enumerate()
+            .map(|(i, param_type)| {
+                CommandOption::from_local(
+                    &local_command.fn_param_names[i],
+                    &local_command.fn_param_descriptions[i],
+                    param_type,
+                    !local_command.optional_params[i],
+                    local_command.fn_param_autocomplete[i],
+                )
+            })
             .collect::<Vec<_>>();
+        let options = json::JsonValue::Array(
+            local_options
+                .iter()
+                .map(|opt| {
+                    json::object! {
+                        "name" => opt.name.clone(),
+                        "description" => opt.description.clone(),
+                        "type" => opt.r#type,
+                        "required" => opt.required,
+                        "autocomplete" => opt.autocomplete
+                    }
+                })
+                .collect(),
+        );
 
         // If the command exists in the fetched commands
         if let Some(registered_command) = registered_commands
             .iter()
             .find(|&cmd| cmd.name.as_str() == local_command.name)
         {
-            let registered_options = &registered_command.clone().options.unwrap_or_default();
-            let registered_types: Vec<u32> =
-                registered_options.iter().map(|opt| opt.type_).collect();
-
-            let registered_names: Vec<&str> = registered_options
+            let registered_options = registered_command
+                .options
+                .as_ref()
+                .unwrap_or(&vec![])
                 .iter()
-                .map(|opt| opt.name.as_str())
-                .collect();
-
-            let registered_descriptions: Vec<&str> = registered_options
-                .iter()
-                .map(|opt| opt.description.as_str())
-                .collect();
-
-            let registered_optionals = registered_options
-                .iter()
-                .map(|opt| !opt.required.unwrap_or(false))
+                .map(|opt| CommandOption::from_registered(opt))
                 .collect::<Vec<_>>();
 
-            let registered_autocompletes = registered_options
-                .iter()
-                .map(|opt| opt.autocomplete.unwrap_or(false))
-                .collect::<Vec<_>>();
-
-            let fn_param_names = local_command
-                .fn_param_names
-                .iter()
-                .zip(local_command.fn_param_renames.iter())
-                .map(|(name, rename)| rename.as_ref().unwrap_or(name))
-                .collect::<Vec<_>>();
-
-            let fn_param_autocompletes = local_command
-                .fn_param_autocomplete
-                .iter()
-                .map(|autocomplete| autocomplete.is_some())
-                .collect::<Vec<_>>();
-
-            let types = local_command
-                .fn_sig
-                .iter()
-                .map(map_param_type_to_u32)
-                .collect::<Vec<_>>();
-
-            if local_command.description != registered_command.description
-                || fn_param_names != registered_names
-                || local_command.fn_param_descriptions != registered_descriptions
-                || types != registered_types
-                || fn_param_autocompletes != registered_autocompletes
-                || local_command.optional_params != registered_optionals
-            {
-                let response = request(
+            if local_options != registered_options {
+                request(
                     Method::PATCH,
                     format!("applications/{}/commands/{}", bot_id, registered_command.id).as_str(),
                     Some(json::object! {
@@ -122,10 +121,7 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
                         default_member_permissions: permissions.to_string(),
                     }),
                 )
-                .await
-                .text()
-                .await
-                .unwrap();
+                .await;
 
                 info!(
                     "Updated '{}' slash command, command id: {}",
