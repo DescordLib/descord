@@ -28,15 +28,15 @@ pub struct Interaction {
     pub channel: Option<Channel>,
     pub channel_id: Option<String>,
     pub member: Option<Member>,
-
-    /// User object for the invoking user, if invoked in a DM
-    pub user: Option<User>,
     pub token: String,
     pub message: Option<Message>,
     pub app_permissions: String,
     pub locale: Option<String>,
     pub guild_locale: Option<String>,
     pub context: Option<u32>,
+
+    /// User object for the invoking user, if invoked in a DM
+    pub user: Option<User>,
 }
 
 impl Interaction {
@@ -84,19 +84,21 @@ impl Interaction {
         .await;
     }
 
-    pub async fn edit_original<S: AsRef<str>>(&self, response: S) {
-        request(
+    pub async fn edit_original(&self, response: impl Into<CreateMessageData>) {
+        let response: CreateMessageData = response.into();
+
+        let resp = request(
             Method::PATCH,
             format!(
                 "webhooks/{}/{}/messages/@original",
                 self.application_id, self.token
             )
             .as_str(),
-            Some(json::object! {
-                content: response.as_ref(),
-            }),
+            Some(json::parse(&response.serialize_json()).unwrap()),
         )
         .await;
+
+        println!("{}", resp.text().await.unwrap());
     }
 
     pub async fn delete_original(&self) {

@@ -144,6 +144,16 @@ async fn reaction_add(reaction: Reaction) {
     }
 }
 
+#[component(id = "btn1")]
+async fn btn1(int: Interaction) {
+    int.reply("You clicked me!", false).await;
+}
+
+#[component(id = "btn2")]
+async fn btn2(int: Interaction) {
+    int.reply("I told you not to click me!", false).await;
+}
+
 #[command]
 async fn components(message: Message) {
     let b1: Component = ComponentBuilder::button(ButtonObject {
@@ -156,7 +166,7 @@ async fn components(message: Message) {
 
     let b2: Component = ComponentBuilder::button(ButtonObject {
         style: ButtonStyle::Secondary as _,
-        label: Some("Click me".to_string()),
+        label: Some("Don't click me".to_string()),
         custom_id: Some("btn2".to_string()),
         ..Default::default()
     })
@@ -164,7 +174,7 @@ async fn components(message: Message) {
 
     let b3: Component = ComponentBuilder::button(ButtonObject {
         style: ButtonStyle::Danger as _,
-        label: Some("Click me".to_string()),
+        label: Some("You can't click me".to_string()),
         custom_id: Some("btn3".to_string()),
         disabled: true,
         ..Default::default()
@@ -191,10 +201,8 @@ async fn components(message: Message) {
     })
     .unwrap();
 
+    // Column<Row<>>
     message
-        .reply(CreateMessageData {
-            components: vec![vec![b1], vec![b2, b3], vec![select]],
-            ..Default::default()
-        })
+        .reply(vec![vec![b1], vec![b2, b3], vec![select]])
         .await;
 }

@@ -77,13 +77,7 @@ impl WsManager {
         })
     }
 
-    pub async fn connect<'a>(
-        &'a mut self,
-        intents: u32,
-        event_handlers: Arc<HashMap<Event, EventHandler>>,
-        commands: Arc<HashMap<String, Command>>,
-        slash_commands: Arc<HashMap<String, SlashCommand>>,
-    ) -> Result<()> {
+    pub async fn connect<'a>(&'a mut self, intents: u32, handlers: Handlers) -> Result<()> {
         if let Some(Ok(Message::Text(body))) = self.socket.1.lock().await.next().await {
             let Some(payload) = Payload::parse(&body) else {
                 panic!("Failed to parse json, body: {body}");
@@ -127,7 +121,7 @@ impl WsManager {
                         let current_seq = payload.sequence.unwrap_or(0);
                         *self.sequence.lock().await = current_seq;
                         info!(
-                            "received {} event, sequence: {current_seq}",
+                            "Received {} event, sequence: {current_seq}",
                             payload
                                 .type_name
                                 .as_ref()
@@ -137,18 +131,14 @@ impl WsManager {
                             // json::parse(&payload.raw_json).unwrap().pretty(4)
                         );
 
-                        let event_handlers = Arc::clone(&event_handlers);
-                        let commands = Arc::clone(&commands);
-                        let slash_commands = Arc::clone(&slash_commands);
                         let seq = Arc::clone(&self.sequence);
+                        let handlers = handlers.clone();
 
                         tokio::spawn(async move {
                             Self::dispatch_event(
                                 payload,
-                                event_handlers,
-                                commands,
-                                slash_commands,
                                 seq,
+                                handlers,
                             )
                             .await
                             .expect("Failed to parse json response");
@@ -169,10 +159,8 @@ impl WsManager {
 
     async fn dispatch_event(
         payload: Payload,
-        event_handlers: Arc<HashMap<Event, EventHandler>>,
-        commands: Arc<HashMap<String, Command>>,
-        slash_commands: Arc<HashMap<String, SlashCommand>>,
         seq: Arc<Mutex<usize>>,
+        handlers: Handlers,
     ) -> Result<(), nanoserde::DeJsonErr> {
         let mut event = match Event::from_str(payload.type_name.as_ref().unwrap().as_str()) {
             Ok(event) => event,
@@ -202,10 +190,10 @@ impl WsManager {
                     .put(message_data.data.id.clone(), message_data.data.clone());
 
                 if let Some(command_name) = message_data.data.content.split(' ').next() {
-                    if let Some(handler_fn) = commands.get(command_name) {
+                    if let Some(command_handler_fn) = handlers.commands.get(command_name) {
                         let mut required_permissions: u64 = 0;
 
-                        for permission in &handler_fn.permissions {
+                        for permission in &command_handler_fn.permissions {
                             required_permissions |= consts::permissions::parse(&permission)
                                 .expect("Invalid permission name");
                         }
@@ -239,8 +227,8 @@ impl WsManager {
                             }
                         }
 
-                        let handler = handler_fn.clone();
-                        if let Err(e) = handler_fn.call(message_data.data.clone()).await {
+                        let handler = command_handler_fn.clone();
+                        if let Err(e) = command_handler_fn.call(message_data.data.clone()).await {
                             utils::reply(&msg_id, &channel_id, e.to_string()).await;
                         }
 
@@ -266,7 +254,7 @@ impl WsManager {
                 let data = DeletedMessageResponse::deserialize_json(&payload.raw_json).unwrap();
 
                 if let Some(cached_data) = MESSAGE_CACHE.lock().await.pop(&data.data.message_id) {
-                    if let Some(handler) = event_handlers.get(&Event::MessageDeleteRaw).cloned() {
+                    if let Some(handler) = handlers.event_handlers.get(&Event::MessageDeleteRaw).cloned() {
                         let msg_id = data.data.message_id.clone();
                         let channel_id = data.data.channel_id.clone();
 
@@ -330,16 +318,21 @@ impl WsManager {
 
                 if data.data.type_ == InteractionType::ApplicationCommand as u32 {
                     if let Some(d) = &data.data.data {
-                        if let Some(command) = slash_commands.get(&d.clone().id.unwrap()) {
+                        if let Some(command) = handlers.slash_commands.get(&d.clone().id.unwrap()) {
                             let handler = command.clone();
                             if let Err(e) = handler.call(data.data.clone()).await {
                                 data.data.reply(e.to_string(), true).await;
                             };
                         }
                     }
+                } else if data.data.type_ == InteractionType::MessageComponent as u32 {
+                    let id: &str = data.data.data.as_ref().unwrap().custom_id.as_ref().unwrap();
+                    if let Some(component_handler) = handlers.component_handlers.get(id) {
+                        component_handler.call(data.data.clone()).await;
+                    }
                 } else if data.data.type_ == InteractionType::ApplicationCommandAutocomplete as u32
                 {
-                    let slash_command = slash_commands
+                    let slash_command = handlers.slash_commands
                         .get(data.data.data.as_ref().unwrap().id.as_ref().unwrap())
                         .unwrap();
                     let options = &data.data.data.as_ref().unwrap().options.as_ref().unwrap();
@@ -386,7 +379,7 @@ impl WsManager {
             }
         };
 
-        if let Some(handler) = event_handlers.get(&event) {
+        if let Some(handler) = handlers.event_handlers.get(&event) {
             // TODO: pass context data along with the error for error reporting
             handler.call(data).await;
         }
@@ -501,5 +494,23 @@ impl WsManager {
         }
 
         base_permissions
+    }
+}
+
+pub struct Handlers {
+    pub event_handlers: Arc<HashMap<Event, EventHandler>>,
+    pub commands: Arc<HashMap<String, Command>>,
+    pub slash_commands: Arc<HashMap<String, SlashCommand>>,
+    pub component_handlers: Arc<HashMap<String, ComponentHandler>>,
+}
+
+impl Clone for Handlers {
+    fn clone(&self) -> Self {
+        Handlers {
+            event_handlers: Arc::clone(&self.event_handlers),
+            commands: Arc::clone(&self.commands),
+            slash_commands: Arc::clone(&self.slash_commands),
+            component_handlers: Arc::clone(&self.component_handlers),
+        }
     }
 }

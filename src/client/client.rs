@@ -7,11 +7,11 @@ use json::object;
 use nanoserde::SerJson;
 
 use crate::consts::intents::GatewayIntent;
-use crate::internals::{EventHandler, *};
+use crate::internals::*;
 use crate::models::application_command::ApplicationCommandOption;
 use crate::prelude::{CreateMessageData, Message};
 use crate::utils::{self, request};
-use crate::ws::WsManager;
+use crate::ws;
 use crate::{consts, internals, Event};
 
 use log::{error, info};
@@ -26,11 +26,12 @@ lazy_static::lazy_static! {
 
 pub struct Client {
     intents: u32,
-    ws: WsManager,
+    ws: ws::WsManager,
     token: String,
     commands: HashMap<String, Command>,
     slash_commands: HashMap<String, SlashCommand>,
     event_handlers: HashMap<Event, EventHandler>,
+    component_handlers: HashMap<String, ComponentHandler>,
     prefix: String,
 }
 
@@ -41,7 +42,7 @@ impl Client {
         Self {
             intents: intents.into(),
             token: token.to_owned(),
-            ws: WsManager::new(token)
+            ws: ws::WsManager::new(token)
                 .await
                 .expect("Failed to initialize websockets"),
             prefix: prefix.to_owned(),
@@ -49,6 +50,7 @@ impl Client {
             commands: HashMap::new(),
             slash_commands: HashMap::new(),
             event_handlers: HashMap::new(),
+            component_handlers: HashMap::new(),
         }
     }
 
@@ -56,9 +58,13 @@ impl Client {
         self.ws
             .connect(
                 self.intents,
-                self.event_handlers.into(),
-                self.commands.into(),
-                self.slash_commands.into(),
+                ws::Handlers {
+                    event_handlers: self.event_handlers.into(),
+                    commands: self.commands.into(),
+                    slash_commands: self.slash_commands.into(),
+                    component_handlers: self.component_handlers.into(),
+                }
+
             )
             .await;
     }
@@ -75,6 +81,11 @@ impl Client {
 
             self.event_handlers.insert(event.event, event);
         });
+    }
+
+    pub fn register_component_callbacks(&mut self, commands: Vec<ComponentHandler>) {
+        self.component_handlers
+            .extend(commands.into_iter().map(|d| (d.id.clone(), d)));
     }
 
     pub fn register_commands(&mut self, commands: Vec<Command>) {

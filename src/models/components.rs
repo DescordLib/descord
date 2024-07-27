@@ -75,7 +75,7 @@ impl SelectObject {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Default)]
 pub struct ButtonObject {
     pub style: u32,
     pub label: Option<String>,

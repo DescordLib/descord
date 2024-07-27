@@ -21,12 +21,13 @@ impl ComponentBuilder {
         } = button;
 
         Ok(Component {
-            type_: 2,
             label,
             emoji,
             custom_id,
             url,
             disabled,
+
+            type_: 2,
             style: Some(style),
             components: None,
             options: None,
