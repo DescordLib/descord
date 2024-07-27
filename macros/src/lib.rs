@@ -100,6 +100,71 @@ event_handler_args![
 ];
 
 #[derive(Debug, FromMeta)]
+struct ComponentArgs {
+    id: String,
+}
+
+#[proc_macro_attribute]
+pub fn component(args: TokenStream, input: TokenStream) -> TokenStream {
+    let function = parse_macro_input!(input as ItemFn);
+    let function_vis = function.vis;
+    let function_name = &function.sig.ident;
+    let function_body = function.block;
+
+    let attr_args = match NestedMeta::parse_meta_list(args.into()) {
+        Ok(v) => v,
+        Err(e) => {
+            return TokenStream::from(Error::from(e).write_errors());
+        }
+    };
+
+    let component_args: ComponentArgs = match ComponentArgs::from_list(&attr_args) {
+        Ok(v) => v,
+        Err(e) => {
+            return TokenStream::from(Error::from(e).write_errors());
+        }
+    };
+
+    let custom_id = component_args.id.to_string();
+
+    let param_name = match function.sig.inputs.first().unwrap() {
+        syn::FnArg::Typed(x) => match *x.pat {
+            syn::Pat::Ident(ref ident) => quote! { #ident },
+            syn::Pat::Wild(ref ident) => quote! { #ident },
+            _ => panic!("unknown parameter name"),
+        },
+        _ => panic!("self???"),
+    };
+
+    let let_stmt = quote! {
+        let #param_name = data;
+    };
+
+    let expanded = quote! {
+        #function_vis fn #function_name() -> descord::internals::ComponentHandler {
+            use descord::prelude::*;
+
+            fn f(
+                data: Interaction,
+            ) -> std::pin::Pin<Box<dyn std::future::Future<Output = DescordResult> + Send + 'static>> {
+                Box::pin(async move {
+                    #let_stmt
+                    #function_body
+                    Ok(())
+                })
+            }
+
+            internals::ComponentHandler {
+                id: #custom_id.to_string(),
+                handler_fn: f,
+            }
+        }
+    };
+
+    TokenStream::from(expanded)
+}
+
+#[derive(Debug, FromMeta)]
 struct CommandArgs {
     #[darling(default)]
     name: Option<String>,
@@ -307,6 +372,8 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
                 }
                 match inner_type.as_str() {
                     "String" => (type_path!(StringOption, name), type_name!(String), true),
+
+
                     "isize" => (type_path!(IntOption, name), type_name!(Int), true),
                     "bool" => (type_path!(BoolOption, name), type_name!(Bool), true),
                     "Channel" => (type_path!(ChannelOption, name), type_name!(Channel), true),
@@ -821,6 +888,7 @@ pub fn register_all(input: TokenStream) -> TokenStream {
     let mut events = Vec::new();
     let mut commands = Vec::new();
     let mut slash_commands = Vec::new();
+    let mut components = Vec::new();
 
     for path in &paths {
         let items = syn::parse_file(&std::fs::read_to_string(&path).unwrap())
@@ -850,6 +918,13 @@ pub fn register_all(input: TokenStream) -> TokenStream {
                         .map_or(false, |seg| seg.ident == "slash")
                 }) {
                     slash_commands.push(function.sig.ident.clone());
+                } else if function.attrs.iter().any(|attr| {
+                    attr.path()
+                        .segments
+                        .last()
+                        .map_or(false, |seg| seg.ident == "component")
+                }) {
+                    components.push(function.sig.ident.clone());
                 }
             }
         }
@@ -859,6 +934,7 @@ pub fn register_all(input: TokenStream) -> TokenStream {
         #client_obj.register_events(vec![#(#events()),*]);
         #client_obj.register_commands(vec![#(#commands()),*]);
         #client_obj.register_slash_commands(vec![#(#slash_commands()),*]).await;
+        #client_obj.register_component_callbacks(vec![#(#components()),*]);
     };
 
     TokenStream::from(expanded)
