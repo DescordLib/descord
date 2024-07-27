@@ -7,7 +7,6 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use crate::models::application_command::ApplicationCommand;
 use crate::models::channel::Channel;
 use crate::models::dm_channel::DirectMessageChannel;
-use crate::models::message_edit::MessageEditData;
 use crate::models::message_response::CreateMessageData;
 
 use crate::prelude::{Guild, Member, Message};
@@ -148,9 +147,9 @@ pub async fn delete_message(channel_id: &str, message_id: &str) -> bool {
     resp.status() == StatusCode::NO_CONTENT
 }
 
-pub async fn edit_message(channel_id: &str, message_id: &str, data: impl Into<MessageEditData>) {
+pub async fn edit_message(channel_id: &str, message_id: &str, data: impl Into<CreateMessageData>) {
     let url = format!("channels/{channel_id}/messages/{message_id}");
-    let data: MessageEditData = data.into();
+    let data: CreateMessageData = data.into();
 
     request(
         Method::PATCH,

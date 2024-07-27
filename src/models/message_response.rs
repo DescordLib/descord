@@ -8,7 +8,6 @@ use super::channel::Channel;
 use super::components::Component;
 use super::embed::Embed;
 use super::guild::Member;
-use super::message_edit::MessageEditData;
 use crate::prelude::User;
 use crate::utils;
 use crate::{consts, Client};
@@ -42,6 +41,7 @@ pub struct Message {
     pub content: String,
 
     pub channel_id: String,
+
     #[nserde(default)]
     pub embeds: Vec<Embed>,
     pub author: Option<User>,
@@ -49,11 +49,14 @@ pub struct Message {
     pub referenced_message: Option<Box<Message>>,
 
     pub guild_id: Option<String>,
+
     pub id: String,
 
     pub member: Option<Member>,
 
     pub attachments: Vec<Attachment>,
+
+    pub components: Vec<Component>,
     // TODO
     // mentions, mention_roles, member, etc.
 }
@@ -88,7 +91,7 @@ impl Message {
         self.delete().await;
     }
 
-    pub async fn edit(&self, data: impl Into<MessageEditData>) {
+    pub async fn edit(&self, data: impl Into<CreateMessageData>) {
         utils::edit_message(&self.channel_id, &self.id, data).await;
     }
 
@@ -107,8 +110,7 @@ pub struct CreateMessageData {
     pub flags: Option<u32>,
     pub attachments: Vec<Attachment>,
 
-    /// Column<Row<Component>>
-    pub components: Vec<Vec<Component>>,
+    pub components: Vec<Component>,
 }
 
 impl CreateMessageData {
@@ -127,10 +129,16 @@ impl CreateMessageData {
             })
             .collect::<Vec<_>>();
 
-        json.remove("components");
-        json.insert("components", components);
-
         json::stringify(json)
+    }
+
+    pub fn add_components(mut self, components: Vec<Vec<Component>>) -> Self {
+        let new: CreateMessageData = components.into();
+
+        CreateMessageData {
+            components: new.components,
+            ..self
+        }
     }
 }
 
@@ -197,6 +205,32 @@ impl From<AllowedMentions> for CreateMessageData {
     fn from(value: AllowedMentions) -> Self {
         CreateMessageData {
             allowed_mentions: Some(value),
+            ..Default::default()
+        }
+    }
+}
+
+impl From<Vec<Vec<Component>>> for CreateMessageData {
+    fn from(value: Vec<Vec<Component>>) -> Self {
+        let components = value
+            .iter()
+            .map(|column| {
+                let components = json::parse(&column.serialize_json()).unwrap();
+
+                // TODO: improve this logic cause its kinda slow
+                Component::deserialize_json(
+                    &json::object! {
+                        type: 1,
+                        components: components,
+                    }
+                    .pretty(1),
+                )
+                .unwrap()
+            })
+            .collect::<Vec<_>>();
+
+        CreateMessageData {
+            components,
             ..Default::default()
         }
     }
