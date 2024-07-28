@@ -39,7 +39,7 @@ macro_rules! event_handler_args {
 
         #[allow(dead_code)]
         impl EventHandlerArgs {
-            /// Returns if only one of the events is turned on.
+            /// Returns true if only one of the events is turned on.
             pub fn only_one(&self) -> bool {
                 [$(self.$event_name,)*]
                     .into_iter()
@@ -53,18 +53,36 @@ macro_rules! event_handler_args {
                 &[$(stringify!($event_name),)*]
             }
 
-            pub fn get(&self, fn_name: &str, param_name: &proc_macro2::TokenStream) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
+            pub fn get(&mut self, fn_name: &str, param_name: &proc_macro2::TokenStream) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
                 match () {
                     $(
                         _ if self.$event_name
                             || fn_name.to_lowercase() == stringify!($event_name).to_lowercase()
-                        => (
-                            quote! { descord::internals::HandlerValue::$arg_type(#param_name) },
-                            quote! { descord::Event::$event_ty },
-                        ),
+                        => {
+                            self.$event_name = true;
+
+                            (
+                                quote! { descord::internals::HandlerValue::$arg_type(#param_name) },
+                                quote! { descord::Event::$event_ty },
+                            )
+                        },
                     )*
 
-                    _ => panic!("Enable one of {:?} event", self.all_events()),
+                    _ => panic!("Enable one of {:?} event\nYou can enable 'one' event like `#[event(event_name)]` or just naming the function same as the event name.", self.all_events()),
+                }
+            }
+
+            /// Make sure to call `get(...)` before this in case
+            /// the event type was not set from the proc macro
+            /// and is to be inferred from function name.
+            pub fn get_arg_name(&self) -> String {
+                match () {
+                    $(
+                        _ if self.$event_name =>
+                            stringify!($arg_type).to_string(),
+                    )*
+
+                    _ => panic!("no event is set, call `get(...)` before calling this function"),
                 }
             }
 
@@ -93,7 +111,7 @@ event_handler_args![
     message_create     => MessageCreate      : Message,
     message_delete     => MessageDelete      : Message,
     message_delete_raw => MessageDeleteRaw   : DeletedMessage,
-    message_update     => MessageUpdate      : MessageData,
+    message_update     => MessageUpdate      : Message,
     reaction_add       => MessageReactionAdd : Reaction,
     guild_create       => GuildCreate        : GuildCreate,
     interaction_create => InteractionCreate  : Interaction,
@@ -179,29 +197,13 @@ pub fn event(args: TokenStream, input: TokenStream) -> TokenStream {
     let function = parse_macro_input!(input as ItemFn);
     let function_vis = function.vis;
     let function_name = &function.sig.ident;
+    let function_params = &function.sig.inputs;
     let mut function_body = function.block;
     let mut visitor = ReturnVisitor;
 
     visit_mut::visit_block_mut(&mut visitor, &mut function_body);
     let mut visitor = UnwrapVisitor { has_unwrap: false };
     visit_mut::visit_block_mut(&mut visitor, &mut function_body);
-
-    if visitor.has_unwrap {
-        println!("Warning: Function '{}' uses .unwrap(). Consider using ? operator if unwrapping a Result for proper error handling", function_name);
-    }
-
-    if function.sig.inputs.len() != 1 {
-        panic!("Expected only one parameter");
-    }
-
-    let param_name = match function.sig.inputs.first().unwrap() {
-        syn::FnArg::Typed(x) => match *x.pat {
-            syn::Pat::Ident(ref ident) => quote! { #ident },
-            syn::Pat::Wild(ref ident) => quote! { #ident },
-            _ => panic!("unknown parameter name"),
-        },
-        _ => panic!("self???"),
-    };
 
     if function.sig.asyncness.is_none() {
         panic!("Function marked with `#[descord::event(...)]` should be async");
@@ -214,14 +216,50 @@ pub fn event(args: TokenStream, input: TokenStream) -> TokenStream {
         }
     };
 
-    let handler_args: EventHandlerArgs = match EventHandlerArgs::from_list(&attr_args) {
+    let mut handler_args: EventHandlerArgs = match EventHandlerArgs::from_list(&attr_args) {
         Ok(v) => v,
         Err(e) => {
             return TokenStream::from(Error::from(e).write_errors());
         }
     };
 
-    let (name, event_ty) = handler_args.get(&function_name.to_string(), &param_name);
+    if visitor.has_unwrap {
+        println!("Warning: Function '{}' uses .unwrap(). Consider using ? operator if unwrapping a Result for proper error handling", function_name);
+    }
+
+    if function.sig.inputs.len() != 1 {
+        panic!("Expected only one parameter");
+    }
+
+    // let (name, event_ty) = handler_args.get(&function_name.to_string(), &param_name);
+    let (name, event_ty) = match function_params.first().unwrap() {
+        syn::FnArg::Typed(param) => {
+            let param_name = match *param.pat {
+                syn::Pat::Ident(ref ident) => quote! { #ident },
+                syn::Pat::Wild(ref ident) => quote! { #ident },
+                _ => panic!("unknown parameter name"),
+            };
+
+            let ret = handler_args.get(&function_name.to_string(), &param_name);
+
+            let ty = (*param.ty).clone();
+            let syn::Type::Path(ref path) = ty else {
+                panic!("Expected a path found something else");
+            };
+
+            let syn::PathSegment { ident, .. } = path.path.segments.last().unwrap();
+            let ident = ident.to_string();
+            let expected_type_name = handler_args.get_arg_name();
+
+            if expected_type_name != ident {
+                panic!("Expected parameter type `{expected_type_name}` but found `{ident}`");
+            }
+
+            ret
+        }
+
+        _ => panic!("uh"),
+    };
 
     let let_stmt = quote! {
         let #name = data else {
@@ -372,7 +410,6 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
                 }
                 match inner_type.as_str() {
                     "String" => (type_path!(StringOption, name), type_name!(String), true),
-
 
                     "isize" => (type_path!(IntOption, name), type_name!(Int), true),
                     "bool" => (type_path!(BoolOption, name), type_name!(Bool), true),
