@@ -151,6 +151,15 @@ impl From<String> for CreateMessageData {
     }
 }
 
+impl From<&String> for CreateMessageData {
+    fn from(value: &String) -> Self {
+        Self {
+            content: value.clone(),
+            ..Default::default()
+        }
+    }
+}
+
 impl From<&str> for CreateMessageData {
     fn from(value: &str) -> Self {
         Self {

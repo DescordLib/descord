@@ -87,3 +87,15 @@ async fn avatar(
     interaction.reply(embed, false).await;
 }
 ```
+
+## More examples?
+Read `src/main.rs` for future examples.
+I'll add detailed examples in examples folder later.
+
+## Installation
+Add the following to your `Cargo.toml` file:
+``` toml
+[dependencies]
+descord = { git = "https://github.com/DescordLib/descord", version = "0.1.10" }
+tokio = { version = "1.39.2", features = ["macros", "rt-multi-thread"] }
+```
