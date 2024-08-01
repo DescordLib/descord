@@ -1,5 +1,9 @@
 use super::*;
 
+/// Fetches a user by ID
+///
+/// # Arguments
+/// `user_id` - The ID of the user to fetch
 pub async fn fetch_user(user_id: &str) -> Result<User, Box<dyn std::error::Error>> {
     let url = format!("users/{}", user_id);
     let resp = request(Method::GET, &url, None).await;
@@ -8,6 +12,11 @@ pub async fn fetch_user(user_id: &str) -> Result<User, Box<dyn std::error::Error
     Ok(user)
 }
 
+/// Fetches a member by ID
+///
+/// # Arguments
+/// `guild_id` - The ID of the guild the member is in
+/// `user_id` - The ID of the member to fetch
 pub async fn fetch_member(
     guild_id: &str,
     user_id: &str,

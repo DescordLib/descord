@@ -26,6 +26,7 @@ pub mod prelude {
     pub use super::*;
     pub use super::{
         color::*,
+        consts::permissions,
         consts::ButtonStyle,
         consts::ComponentType,
         consts::ImageFormat,
@@ -33,10 +34,9 @@ pub mod prelude {
         intents::GatewayIntent,
         models::{
             channel::*, channel::*, component_builder::*, components::*, embed::*,
-            embed_builder::*, guild::*, interaction::*,
-            message_response::CreateMessageData, message_response::Message,
-            reaction_response::Reaction, ready_response::*, role::Role, role_response::*,
-            user::User,
+            embed_builder::*, guild::*, interaction::*, message_response::CreateMessageData,
+            message_response::Message, reaction_response::Reaction, ready_response::*, role::Role,
+            role_response::*, user::User,
         },
         Payload,
     };

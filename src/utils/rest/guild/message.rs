@@ -1,5 +1,11 @@
 use super::*;
 
+/// Edit a message sent by the bot in a channel.
+///
+/// # Arguments
+/// `channel_id` - The ID of the channel the message is in
+/// `message_id` - The ID of the message to edit
+/// `data` - The data to edit the message with
 pub async fn edit_message(channel_id: &str, message_id: &str, data: impl Into<CreateMessageData>) {
     let url = format!("channels/{channel_id}/messages/{message_id}");
     let data: CreateMessageData = data.into();
@@ -12,6 +18,11 @@ pub async fn edit_message(channel_id: &str, message_id: &str, data: impl Into<Cr
     .await;
 }
 
+/// Gets a message by ID.
+///
+/// # Arguments
+/// `channel_id` - The ID of the channel the message is in
+/// `message_id` - The ID of the message to fetch
 pub async fn fetch_message(
     channel_id: &str,
     message_id: &str,
@@ -35,11 +46,19 @@ pub async fn delete_message(channel_id: &str, message_id: &str) -> bool {
     resp.status() == StatusCode::NO_CONTENT
 }
 
+/// Adds a reaction to a message.
+///
+/// # Arguments
+/// `channel_id` - The ID of the channel the message is in
+/// `message_id` - The ID of the message to add the reaction to
+/// `user_id` - The ID of the user who's reaction is to be removed
+/// `emoji` - The emoji to react with
 pub async fn remove_reaction(channel_id: &str, message_id: &str, user_id: &str, emoji: &str) {
     let url = format!("channels/{channel_id}/messages/{message_id}/reactions/{emoji}/{user_id}");
     request(Method::DELETE, &url, None).await;
 }
 
+/// Adds a reaction to a message.
 pub async fn react(channel_id: &str, message_id: &str, emoji: &str) {
     let url = format!(
         "channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me",
@@ -49,6 +68,12 @@ pub async fn react(channel_id: &str, message_id: &str, emoji: &str) {
     request(Method::PUT, &url, None).await;
 }
 
+/// Reply to a message.
+///
+/// # Arguments
+/// `message_id` - The ID of the message to reply to
+/// `channel_id` - The ID of the channel the message is in
+/// `data` - The data to reply with
 pub async fn reply(
     message_id: &str,
     channel_id: &str,
@@ -74,6 +99,11 @@ pub async fn reply(
     Message::deserialize_json(&resp).unwrap()
 }
 
+/// Send a message to a channel.
+///
+/// # Arguments
+/// `channel_id` - The ID of the channel to send the message to
+/// `data` - The data to send the message with
 pub async fn send(channel_id: &str, data: impl Into<CreateMessageData>) -> Message {
     let data: CreateMessageData = data.into();
     let body = data.to_json();

@@ -1,5 +1,6 @@
 use super::*;
 
+/// Get a channel by ID
 pub async fn fetch_channel(channel_id: &str) -> Result<Channel, Box<dyn std::error::Error>> {
     let url = format!("channels/{channel_id}");
     let resp = request(Method::GET, &url, None).await.text().await?;
