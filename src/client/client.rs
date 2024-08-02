@@ -56,15 +56,14 @@ impl Client {
 
     pub async fn login(mut self) {
         self.ws
-            .connect(
+            .start(
                 self.intents,
                 ws::Handlers {
                     event_handlers: self.event_handlers.into(),
                     commands: self.commands.into(),
                     slash_commands: self.slash_commands.into(),
                     component_handlers: self.component_handlers.into(),
-                }
-
+                },
             )
             .await;
     }

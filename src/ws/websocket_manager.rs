@@ -65,19 +65,38 @@ pub struct WsManager {
 
 impl WsManager {
     pub async fn new(token: &str) -> Result<Self> {
+        Ok(Self {
+            token: token.to_owned(),
+            socket: Self::connect_socket()
+                .await
+                .expect("Failed to connect to the gateway"),
+            sequence: Arc::new(Mutex::new(0)),
+        })
+    }
+
+    async fn connect_socket() -> Result<(SocketWrite, SocketRead)> {
         let (socket, _response) = connect_async(consts::GATEWAY_URL).await?;
 
         let (write, read) = socket.split();
         let (write, read) = (Arc::new(Mutex::new(write)), Arc::new(Mutex::new(read)));
 
-        Ok(Self {
-            token: token.to_owned(),
-            socket: (write, read),
-            sequence: Arc::new(Mutex::new(0)),
-        })
+        Ok((write, read))
     }
 
-    pub async fn connect<'a>(&'a mut self, intents: u32, handlers: Handlers) -> Result<()> {
+    pub async fn start(&mut self, intents: u32, handlers: Handlers) {
+        let mut interval = 0;
+        loop {
+            let e = self.connect(intents, handlers.clone()).await;
+            dbg!(e);
+            error!("Connection closed");
+            interval += 1;
+            info!("Attempting to reconnect in {} seconds", interval);
+            thread::sleep(Duration::from_secs(interval));
+            self.socket = Self::reconnect(Arc::clone(&self.sequence)).await;
+        }
+    }
+
+    async fn connect<'a>(&'a mut self, intents: u32, handlers: Handlers) -> Result<()> {
         if let Some(Ok(Message::Text(body))) = self.socket.1.lock().await.next().await {
             let Some(payload) = Payload::parse(&body) else {
                 panic!("Failed to parse json, body: {body}");
@@ -135,20 +154,16 @@ impl WsManager {
                         let handlers = handlers.clone();
 
                         tokio::spawn(async move {
-                            Self::dispatch_event(
-                                payload,
-                                seq,
-                                handlers,
-                            )
-                            .await
-                            .expect("Failed to parse json response");
+                            Self::dispatch_event(payload, seq, handlers)
+                                .await
+                                .expect("Failed to parse json response");
                         });
                     }
 
                     _ => {}
                 }
             } else {
-                break x.unwrap().unwrap_err();
+                break x;
             }
         };
 
@@ -162,6 +177,11 @@ impl WsManager {
         seq: Arc<Mutex<usize>>,
         handlers: Handlers,
     ) -> Result<(), nanoserde::DeJsonErr> {
+        // info!(
+        //     "payload: {}",
+        //     json::parse(&payload.raw_json).unwrap().pretty(4)
+        // );
+
         let mut event = match Event::from_str(payload.type_name.as_ref().unwrap().as_str()) {
             Ok(event) => event,
             Err(_) => {
@@ -254,7 +274,11 @@ impl WsManager {
                 let data = DeletedMessageResponse::deserialize_json(&payload.raw_json).unwrap();
 
                 if let Some(cached_data) = MESSAGE_CACHE.lock().await.pop(&data.data.message_id) {
-                    if let Some(handler) = handlers.event_handlers.get(&Event::MessageDeleteRaw).cloned() {
+                    if let Some(handler) = handlers
+                        .event_handlers
+                        .get(&Event::MessageDeleteRaw)
+                        .cloned()
+                    {
                         let msg_id = data.data.message_id.clone();
                         let channel_id = data.data.channel_id.clone();
 
@@ -309,7 +333,13 @@ impl WsManager {
             }
 
             Event::GuildCreate => {
-                let data = GuildCreateResponse::deserialize_json(&payload.raw_json).unwrap();
+                let data =
+                    GuildCreateResponse::deserialize_json(&payload.raw_json).unwrap_or_else(|e| {
+                        panic!(
+                            "Failing part: {}",
+                            &payload.raw_json[e.col - 10..e.col + 10]
+                        );
+                    });
                 data.data.into()
             }
 
@@ -332,7 +362,8 @@ impl WsManager {
                     }
                 } else if data.data.type_ == InteractionType::ApplicationCommandAutocomplete as u32
                 {
-                    let slash_command = handlers.slash_commands
+                    let slash_command = handlers
+                        .slash_commands
                         .get(data.data.data.as_ref().unwrap().id.as_ref().unwrap())
                         .unwrap();
                     let options = &data.data.data.as_ref().unwrap().options.as_ref().unwrap();
@@ -387,7 +418,7 @@ impl WsManager {
         Ok(())
     }
 
-    async fn reconnect(seq: Arc<Mutex<usize>>) {
+    async fn reconnect(seq: Arc<Mutex<usize>>) -> (SocketWrite, SocketRead) {
         info!("Reopening the connection...");
 
         let resume_gateway_url = RESUME_GATEWAY_URL.lock().unwrap().as_ref().unwrap().clone();
@@ -407,6 +438,10 @@ impl WsManager {
             ))))
             .await
             .expect("Failed to send resume event");
+
+        let (write, read) = socket.split();
+        let (write, read) = (Arc::new(Mutex::new(write)), Arc::new(Mutex::new(read)));
+        (write, read)
     }
 
     async fn heartbeat_start(

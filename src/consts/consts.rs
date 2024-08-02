@@ -4,6 +4,7 @@ pub const MESSAGE_CACHE_SIZE: usize = 100_000;
 pub const ROLE_CACHE_SIZE: usize = 100_000;
 pub const GUILD_CACHE_SIZE: usize = 30_000;
 pub const RATE_LIMITS_CACHE_SIZE: usize = 50_000;
+pub const CHANNEL_CACHE_SIZE: usize = 50_000;
 pub const DISCORD_CDN: &str = "https://cdn.discordapp.com";
 
 #[derive(Debug, Clone, Copy)]

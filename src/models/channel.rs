@@ -58,4 +58,8 @@ impl Channel {
     pub async fn send_message(&self, data: impl Into<CreateMessageData>) -> Message {
         utils::send(&self.id, data).await
     }
+
+    pub async fn send_typing(&self) {
+        utils::send_typing(&self.id).await;
+    }
 }

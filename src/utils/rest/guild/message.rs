@@ -1,5 +1,7 @@
 use super::*;
 
+// TODO: fix caching for messages
+
 /// Edit a message sent by the bot in a channel.
 ///
 /// # Arguments
