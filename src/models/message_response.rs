@@ -62,18 +62,22 @@ pub struct Message {
 }
 
 impl Message {
+    /// Reply to the message
     pub async fn reply(&self, data: impl Into<CreateMessageData>) -> Message {
         utils::reply(&self.id, &self.channel_id, data).await
     }
 
+    /// Send a message in the same channel
     pub async fn send_in_channel(&self, data: impl Into<CreateMessageData>) -> Message {
         utils::send(&self.channel_id, data).await
     }
 
+    /// Get the current channel
     pub async fn get_channel(&self) -> Result<Channel, Box<dyn std::error::Error>> {
         utils::fetch_channel(&self.channel_id).await
     }
 
+    /// Get the message author
     pub async fn get_author(&self) -> Result<Member, Box<dyn Error>> {
         utils::fetch_member(
             self.guild_id.as_ref().unwrap(),
@@ -82,12 +86,14 @@ impl Message {
         .await
     }
 
+    /// Delete this message
     pub async fn delete(&self) -> bool {
         utils::delete_message(&self.channel_id, &self.id).await
     }
 
-    pub async fn delete_after(&self, time: u64) {
-        tokio::time::sleep(tokio::time::Duration::from_millis(time)).await;
+    /// Delete this message after a certain amount of time
+    pub async fn delete_after(&self, time: tokio::time::Duration) {
+        tokio::time::sleep(time);
         self.delete().await;
     }
 
@@ -223,7 +229,7 @@ impl From<Vec<Vec<Component>>> for CreateMessageData {
     fn from(value: Vec<Vec<Component>>) -> Self {
         let components = value
             .iter()
-            .map(|column| {
+            .map(|column| -> Component {
                 let components = json::parse(&column.serialize_json()).unwrap();
 
                 // TODO: improve this logic cause its kinda slow

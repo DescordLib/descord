@@ -7,14 +7,24 @@ async fn main() {
 
     let mut client = Client::new(
         &std::env::var("DISCORD_TOKEN").expect("Expected a token in the environment"),
-        GatewayIntent::ALL,
+        GatewayIntent::NON_PRIVILEGED
+        // for message commands
+            | GatewayIntent::MESSAGE_CONTENT,
         "!",
     )
     .await;
 
     register_all!(client => []);
+
     client.login().await;
 }
+
+// Custom help message
+
+// #[command]
+// async fn help(msg: Message) {
+//     msg.reply("No default help Hahahah!").await;
+// }
 
 #[slash(name = "greet", description = "Get channel info")]
 async fn ping(
@@ -38,6 +48,16 @@ async fn ping(
     }
 }
 
+#[slash(
+    name = "echo",
+    description = "Echoes the input",
+    permissions = "administrator"
+)]
+async fn echo_slash(interaction: Interaction, #[autocomplete = auto_cmp] message: String) {
+    interaction.defer().await;
+    interaction.followup(message).await;
+}
+
 async fn auto_cmp(value: String) -> Vec<String> {
     let options = vec!["fireplank", "wizard"];
     options
@@ -47,13 +67,6 @@ async fn auto_cmp(value: String) -> Vec<String> {
         .collect()
 }
 
-#[slash(name = "echo", description = "Echoes the input")]
-#[permissions = "administrator"]
-async fn echo_slash(interaction: Interaction, #[autocomplete = auto_cmp] message: String) {
-    interaction.defer().await;
-    interaction.followup(message).await;
-}
-
 #[slash(name = "whisper", description = "Respond with ephemeral message")]
 async fn whisper(interaction: Interaction) {
     interaction
@@ -61,12 +74,16 @@ async fn whisper(interaction: Interaction) {
         .await;
 }
 
+// without cache info
 #[event]
 async fn message_delete_raw(_: DeletedMessage) {
     println!("message deleted");
 }
 
-#[command(permissions = "administrator")]
+#[command(
+    permissions = "administrator",
+    description = "Echoes the input, (requires admin for some reason)"
+)]
 async fn echo(msg: Message, stuff: String) {
     msg.reply(format!("Hello, {}", stuff)).await;
 }
@@ -97,7 +114,7 @@ async fn avatar(interaction: Interaction, #[doc = "User to fetch avatar from"] u
     interaction.reply(embed, false).await;
 }
 
-#[command]
+#[command(description = "Count up or down")]
 async fn counter(msg: Message) {
     let msg = msg.send_in_channel("Count: 0").await;
 
@@ -105,7 +122,7 @@ async fn counter(msg: Message) {
     msg.react("⬇").await;
 }
 
-#[command]
+#[command(description = "React to the message with the given emoji")]
 async fn react(msg: Message, emoji: String) {
     println!("reacting");
     msg.react(&emoji).await;
@@ -154,7 +171,7 @@ async fn btn2(int: Interaction) {
     int.reply("I told you not to click me!", false).await;
 }
 
-#[command]
+#[command(description = "Send a message with components")]
 async fn components(message: Message) {
     let b1: Component = ComponentBuilder::button(ButtonObject {
         style: ButtonStyle::Primary as _,
@@ -204,5 +221,22 @@ async fn components(message: Message) {
     // Column<Row<>>
     message
         .reply(vec![vec![b1], vec![b2, b3], vec![select]])
+        .await;
+}
+
+#[command(description = "Replies with a message after a specified delay (in seconds)")]
+async fn delay(msg: Message) {
+    let delay = msg
+        .content
+        .split_once(' ')
+        .unwrap()
+        .1
+        .parse::<u64>()
+        .unwrap();
+
+    msg.get_channel().await.unwrap().send_typing().await;
+
+    tokio::time::sleep(tokio::time::Duration::from_secs(delay)).await;
+    msg.reply("The quick brown fox jumps over the lazy dog!")
         .await;
 }

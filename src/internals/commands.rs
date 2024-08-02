@@ -8,6 +8,7 @@ pub struct Command {
     pub handler_fn: HandlerFn,
     pub optional_params: Vec<bool>,
     pub permissions: Vec<String>,
+    pub description: String,
 }
 
 impl Command {

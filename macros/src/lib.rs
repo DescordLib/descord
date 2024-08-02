@@ -190,6 +190,8 @@ struct CommandArgs {
     prefix: Option<String>,
     #[darling(multiple)]
     permissions: Vec<String>,
+    #[darling(default)]
+    description: Option<String>,
 }
 
 #[proc_macro_attribute]
@@ -312,6 +314,10 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
             return TokenStream::from(Error::from(e).write_errors());
         }
     };
+
+    let description = command_args
+        .description
+        .unwrap_or("No description provided".to_string());
 
     let custom_prefix = command_args.prefix.is_some();
     let new_name = format!(
@@ -460,6 +466,7 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
             internals::Command {
                 name: String::from(#new_name),
                 fn_sig: vec![#(#param_types),*],
+                description: String::from(#description),
                 handler_fn: f,
                 custom_prefix: #custom_prefix,
                 optional_params: vec![#(#optional_params),*],
