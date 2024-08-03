@@ -17,3 +17,20 @@ pub struct Attachment {
     pub waveform: Option<String>,
     pub flags: Option<usize>,
 }
+
+#[derive(Debug, DeJson, SerJson, Clone)]
+pub struct AttachmentPayload {
+    pub file_name: String,
+    pub file_path: String,
+    pub mime_type: String,
+}
+
+impl AttachmentPayload {
+    pub fn new(file_name: &str, file_path: &str, mime_type: &str) -> Self {
+        AttachmentPayload {
+            mime_type: mime_type.to_owned(),
+            file_name: file_name.to_owned(),
+            file_path: file_path.to_owned(),
+        }
+    }
+}
