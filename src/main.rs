@@ -1,4 +1,5 @@
 use descord::prelude::*;
+use models::attachment::AttachmentPayload;
 
 #[tokio::main]
 async fn main() {
@@ -17,6 +18,24 @@ async fn main() {
     register_all!(client => []);
 
     client.login().await;
+}
+
+#[command(description = "Send a message with two attachments")]
+async fn send_attach(msg: Message) {
+    msg.reply(CreateMessageData {
+        content: "Test message with attachment!".to_string(),
+        attachments: vec![
+            AttachmentPayload::new("test.png", "test.png", "image/png"),
+            AttachmentPayload::new("test2.png", "test.png", "image/png"),
+        ],
+        ..Default::default()
+    })
+    .await;
+}
+
+#[command(description = "A command which will invoke an internal error")]
+async fn test(msg: Message) {
+    msg.send_in_channel("").await;
 }
 
 // Custom help message

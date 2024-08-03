@@ -56,7 +56,7 @@ pub struct Overwrite {
 
 impl Channel {
     pub async fn send_message(&self, data: impl Into<CreateMessageData>) -> Message {
-        utils::send(&self.id, data).await
+        utils::send(&self.id, None, data).await
     }
 
     pub async fn send_typing(&self) {

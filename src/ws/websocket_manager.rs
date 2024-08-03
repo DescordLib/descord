@@ -236,9 +236,10 @@ impl WsManager {
                             .await;
 
                             if user_permissions & required_permissions != required_permissions {
-                                utils::reply(
-                                    &msg_id,
+                                utils::send(
                                     &channel_id,
+                                    Some(
+                                    &msg_id),
                                     "You are missing the required permissions for running this command",
                                 )
                                     .await;
@@ -249,7 +250,7 @@ impl WsManager {
 
                         let handler = command_handler_fn.clone();
                         if let Err(e) = command_handler_fn.call(message_data.data.clone()).await {
-                            utils::reply(&msg_id, &channel_id, e.to_string()).await;
+                            utils::send(&channel_id, Some(&msg_id), e.to_string()).await;
                         }
 
                         return Ok(());
@@ -284,7 +285,7 @@ impl WsManager {
 
                         tokio::spawn(async move {
                             if let Err(e) = handler.call(data.data.into()).await {
-                                utils::reply(&msg_id, &channel_id, e.to_string()).await;
+                                utils::send(&channel_id, Some(&msg_id), e.to_string()).await;
                             }
                         });
                     }

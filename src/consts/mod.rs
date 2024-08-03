@@ -6,6 +6,7 @@ pub mod permissions;
 pub use consts::*;
 pub mod color;
 pub mod intents;
+pub mod reaction;
 
 #[allow(non_snake_case)]
 mod AttachmentFlags {

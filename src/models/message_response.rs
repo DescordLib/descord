@@ -3,11 +3,11 @@ use nanoserde::{DeJson, SerJson};
 use std::error::Error;
 
 use super::allowed_mentions::AllowedMentions;
-use super::attachment::Attachment;
+use super::attachment::{Attachment, AttachmentPayload};
 use super::channel::Channel;
 use super::components::Component;
 use super::embed::Embed;
-use super::guild::Member;
+use super::guild::{Guild, Member};
 use crate::prelude::User;
 use crate::utils;
 use crate::{consts, Client};
@@ -64,12 +64,12 @@ pub struct Message {
 impl Message {
     /// Reply to the message
     pub async fn reply(&self, data: impl Into<CreateMessageData>) -> Message {
-        utils::reply(&self.id, &self.channel_id, data).await
+        utils::send(&self.channel_id, Some(&self.id), data).await
     }
 
     /// Send a message in the same channel
     pub async fn send_in_channel(&self, data: impl Into<CreateMessageData>) -> Message {
-        utils::send(&self.channel_id, data).await
+        utils::send(&self.channel_id, None, data).await
     }
 
     /// Get the current channel
@@ -86,6 +86,20 @@ impl Message {
         .await
     }
 
+    /// Get the guild in which message was sent
+    pub async fn get_guild(&self) -> Result<Guild, Box<dyn Error>> {
+        utils::fetch_guild(self.guild_id.as_ref().unwrap()).await
+    }
+
+    /// Get the message that is being replied to.
+    pub async fn get_message_reference(&self) -> Option<Message> {
+        if let Some(ref message) = self.referenced_message {
+            Some(*message.clone())
+        } else {
+            None
+        }
+    }
+
     /// Delete this message
     pub async fn delete(&self) -> bool {
         utils::delete_message(&self.channel_id, &self.id).await
@@ -97,6 +111,7 @@ impl Message {
         self.delete().await;
     }
 
+    /// Edit the message
     pub async fn edit(&self, data: impl Into<CreateMessageData>) {
         utils::edit_message(&self.channel_id, &self.id, data).await;
     }
@@ -114,14 +129,17 @@ pub struct CreateMessageData {
     pub embeds: Vec<Embed>,
     pub allowed_mentions: Option<AllowedMentions>,
     pub flags: Option<u32>,
-    pub attachments: Vec<Attachment>,
-
     pub components: Vec<Component>,
+
+    #[nserde(transparent)]
+    pub attachments: Vec<AttachmentPayload>,
 }
 
 impl CreateMessageData {
     pub fn to_json(&self) -> String {
         let mut json = json::parse(&self.serialize_json()).unwrap();
+
+        json.remove("attachments");
 
         let components = self
             .components
@@ -198,24 +216,6 @@ impl From<Embed> for CreateMessageData {
     }
 }
 
-impl From<Vec<Attachment>> for CreateMessageData {
-    fn from(value: Vec<Attachment>) -> Self {
-        CreateMessageData {
-            attachments: value,
-            ..Default::default()
-        }
-    }
-}
-
-impl From<Attachment> for CreateMessageData {
-    fn from(value: Attachment) -> Self {
-        CreateMessageData {
-            attachments: vec![value],
-            ..Default::default()
-        }
-    }
-}
-
 impl From<AllowedMentions> for CreateMessageData {
     fn from(value: AllowedMentions) -> Self {
         CreateMessageData {
@@ -246,6 +246,24 @@ impl From<Vec<Vec<Component>>> for CreateMessageData {
 
         CreateMessageData {
             components,
+            ..Default::default()
+        }
+    }
+}
+
+impl From<AttachmentPayload> for CreateMessageData {
+    fn from(value: AttachmentPayload) -> Self {
+        CreateMessageData {
+            attachments: vec![value],
+            ..Default::default()
+        }
+    }
+}
+
+impl From<Vec<AttachmentPayload>> for CreateMessageData {
+    fn from(value: Vec<AttachmentPayload>) -> Self {
+        CreateMessageData {
+            attachments: value,
             ..Default::default()
         }
     }

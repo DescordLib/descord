@@ -1,3 +1,9 @@
+use std::{borrow::Cow, io::Read};
+
+use reqwest::multipart::{Form, Part};
+
+use crate::models::attachment::AttachmentPayload;
+
 use super::*;
 
 // TODO: fix caching for messages
@@ -15,7 +21,7 @@ pub async fn edit_message(channel_id: &str, message_id: &str, data: impl Into<Cr
     request(
         Method::PATCH,
         &url,
-        Some(json::parse(&data.serialize_json()).unwrap()),
+        Some(json::parse(&data.to_json()).unwrap()),
     )
     .await;
 }
@@ -70,53 +76,114 @@ pub async fn react(channel_id: &str, message_id: &str, emoji: &str) {
     request(Method::PUT, &url, None).await;
 }
 
-/// Reply to a message.
+/// Send (or reply to) a message to a channel.
 ///
 /// # Arguments
-/// `message_id` - The ID of the message to reply to
-/// `channel_id` - The ID of the channel the message is in
-/// `data` - The data to reply with
-pub async fn reply(
-    message_id: &str,
+/// `channel_id` - The ID of the channel to send the message to.
+/// `reference_message_id` - The ID of the message to reply to, `None` if not replying.
+/// `data` - The data to send the message with.
+pub async fn send(
     channel_id: &str,
+    reference_message_id: Option<&str>,
     data: impl Into<CreateMessageData>,
 ) -> Message {
     let data: CreateMessageData = data.into();
+
     let mut body = json::parse(&data.to_json()).unwrap();
-    body.insert(
-        "message_reference",
-        object! {
-            message_id: message_id,
-        },
-    );
 
-    let url = format!("channels/{channel_id}/messages",);
+    if let Some(message_id) = reference_message_id {
+        body.insert(
+            "message_reference",
+            object! {
+                message_id: message_id,
+                channel_id: channel_id,
+            },
+        );
+    }
 
-    let resp = request(Method::POST, &url, Some(body))
-        .await
-        .text()
+    let endpoint = format!("channels/{channel_id}/messages");
+    let multipart = get_message_multipart(channel_id, data.attachments, Some(body.dump()))
         .await
         .unwrap();
 
-    Message::deserialize_json(&resp).unwrap()
+    let mut headers = get_headers();
+    headers.remove("Content-Type");
+
+    let client = reqwest::Client::new()
+        .post(&format!("{API}/{endpoint}"))
+        .headers(headers);
+
+    // Cannot clone it
+    // let mut response = client
+    //     .try_clone()
+    //     .unwrap()
+    //     .multipart(multipart)
+    //     .send()
+    //     .await
+    //     .unwrap();
+
+    let response = client.multipart(multipart).send().await.unwrap();
+    let response_text = response.text().await.unwrap();
+
+    Message::deserialize_json(&response_text.to_string()).unwrap_or_else(|e| {
+        panic!(
+            "Failed to send message, error: {}",
+            json::parse(&response_text).unwrap()["message"]
+                .as_str()
+                .unwrap()
+        )
+    })
 }
 
-/// Send a message to a channel.
-///
-/// # Arguments
-/// `channel_id` - The ID of the channel to send the message to
-/// `data` - The data to send the message with
-pub async fn send(channel_id: &str, data: impl Into<CreateMessageData>) -> Message {
-    let data: CreateMessageData = data.into();
-    let body = data.to_json();
+pub async fn get_message_multipart(
+    channel_id: &str,
+    attachments: Vec<AttachmentPayload>,
+    payload_json: Option<String>,
+) -> Result<Form, Box<dyn std::error::Error>> {
+    let mut form = Form::new();
 
-    let url = format!("channels/{channel_id}/messages");
+    if let Some(payload_json) = payload_json {
+        let msg = Part::text(Cow::Owned(payload_json.to_string()))
+            .mime_str("application/json")
+            .unwrap();
 
-    let resp = request(Method::POST, &url, Some(json::parse(&body).unwrap()))
-        .await
-        .text()
-        .await
-        .unwrap();
+        form = form.part("payload_json", msg);
+    }
 
-    Message::deserialize_json(&resp).unwrap()
+    for (
+        file_idx,
+        AttachmentPayload {
+            file_name,
+            file_path,
+            mime_type,
+        },
+    ) in attachments.iter().enumerate()
+    {
+        let mut file = std::fs::File::open(file_path)?;
+        let mut buf = Vec::new();
+
+        file.read_to_end(&mut buf)?;
+
+        let file_part = Part::bytes(Cow::Owned(buf))
+            .file_name(Cow::Owned(file_name.to_string()))
+            .mime_str(&mime_type)
+            .unwrap();
+
+        form = form.part(Cow::Owned(format!("file[{file_idx}]")), file_part);
+    }
+
+    Ok(form)
+
+    // let client = reqwest::Client::new()
+    //     .post(&format!("{API}/channels/{}/messages", channel_id))
+    //     .multipart(form)
+    //     .headers(headers);
+
+    // let response = client.send().await?;
+
+    // if response.status().is_success() {
+    //     Ok(())
+    // } else {
+    //     Err(format!("Failed to send attachment: {}", response.text().await?).into())
+    // }
 }

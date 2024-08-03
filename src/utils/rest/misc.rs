@@ -28,6 +28,7 @@ pub async fn request(method: Method, endpoint: &str, data: Option<JsonValue>) ->
             .and_then(|v| v.to_str().ok())
             .and_then(|v| v.parse().ok())
             .unwrap_or(0.0);
+
         log::warn!(
             "Rate limited on endpoint: {}, retrying after {} seconds",
             endpoint,
@@ -71,7 +72,7 @@ pub async fn update_rate_limit_info(headers: &HeaderMap<HeaderValue>, bucket: &s
         .put(bucket.to_string(), rate_limit_info);
 }
 
-async fn wait_for_rate_limit(bucket: &str) {
+pub(crate) async fn wait_for_rate_limit(bucket: &str) {
     if let Some(rate_limit_info) = RATE_LIMITS.lock().await.get(bucket) {
         log::info!("Rate limit hit: {:?}", rate_limit_info);
         let now = SystemTime::now()
@@ -98,7 +99,6 @@ pub fn get_headers() -> HeaderMap {
 
     map
 }
-
 
 pub async fn fetch_bot_id() -> String {
     let response = request(Method::GET, "users/@me", None).await;
@@ -128,5 +128,5 @@ pub async fn fetch_dm(user_id: &str) -> DirectMessageChannel {
 
 pub async fn send_dm(user_id: &str, data: impl Into<CreateMessageData>) {
     let dm_channel = fetch_dm(user_id).await;
-    send(&dm_channel.id, data).await;
+    send(&dm_channel.id, None, data).await;
 }

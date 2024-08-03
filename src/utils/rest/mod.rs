@@ -1,8 +1,8 @@
 mod guild;
 mod misc;
 
-pub(crate) use misc::*;
 pub use guild::*;
+pub(crate) use misc::*;
 
 pub use misc::*;
 
@@ -27,4 +27,3 @@ use nanoserde::{DeJson, SerJson};
 use reqwest::header::HeaderValue;
 use reqwest::{header::HeaderMap, Client, Error, Method, Response, StatusCode};
 use tokio::time::sleep;
-
