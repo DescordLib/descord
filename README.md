@@ -89,7 +89,7 @@ async fn avatar(
 ```
 
 ## More examples?
-Read `src/main.rs` for future examples.
+Read `src/main.rs` for more examples.
 I'll add detailed examples in examples folder later.
 
 ## Installation
