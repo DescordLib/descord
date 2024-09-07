@@ -9,6 +9,7 @@ use crate::utils::request;
 use nanoserde::{DeJson, SerJson};
 use reqwest::Method;
 
+use super::guild::{Guild, PartialGuild};
 use super::message_response::CreateMessageData;
 use super::{channel::Channel, message_response::Message, user::User};
 
@@ -34,6 +35,7 @@ pub struct Interaction {
     pub locale: Option<String>,
     pub guild_locale: Option<String>,
     pub context: Option<u32>,
+    pub guild_id: String,
 
     /// User object for the invoking user, if invoked in a DM
     pub user: Option<User>,
