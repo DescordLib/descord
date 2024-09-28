@@ -21,7 +21,7 @@ struct UnwrapVisitor {
 
 impl VisitMut for UnwrapVisitor {
     fn visit_expr_method_call_mut(&mut self, i: &mut ExprMethodCall) {
-        if i.method.to_string() == "unwrap" {
+        if i.method == "unwrap" {
             self.has_unwrap = true;
         }
     }
@@ -225,9 +225,9 @@ pub fn event(args: TokenStream, input: TokenStream) -> TokenStream {
         }
     };
 
-    if visitor.has_unwrap {
-        println!("Warning: Function '{}' uses .unwrap(). Consider using ? operator if unwrapping a Result for proper error handling", function_name);
-    }
+    // if visitor.has_unwrap {
+        // println!("Warning: Function '{}' uses .unwrap(). Consider using ? operator if unwrapping a Result for proper error handling", function_name);
+    // }
 
     if function.sig.inputs.len() != 1 {
         panic!("Expected only one parameter");
@@ -337,9 +337,9 @@ pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
     let mut visitor = UnwrapVisitor { has_unwrap: false };
     visit_mut::visit_block_mut(&mut visitor, &mut function_body);
 
-    if visitor.has_unwrap {
-        println!("Warning: Function '{}' uses .unwrap(). Consider using ? operator if unwrapping a Result for proper error handling", function_name);
-    }
+    // if visitor.has_unwrap {
+        // println!("Warning: Function '{}' uses .unwrap(). Consider using ? operator if unwrapping a Result for proper error handling", function_name);
+    // }
 
     let function_params = &function.sig.inputs;
     let function_vis = function.vis;
@@ -535,9 +535,9 @@ pub fn slash(args: TokenStream, input: TokenStream) -> TokenStream {
     visit_mut::visit_block_mut(&mut visitor, &mut function_body);
     let mut visitor = UnwrapVisitor { has_unwrap: false };
     visit_mut::visit_block_mut(&mut visitor, &mut function_body);
-    if visitor.has_unwrap {
-        println!("Warning: Function '{}' uses .unwrap(). Consider using ? operator if unwrapping a Result for proper error handling", function_name);
-    }
+    // if visitor.has_unwrap {
+        // println!("Warning: Function '{}' uses .unwrap(). Consider using ? operator if unwrapping a Result for proper error handling", function_name);
+    // }
     let function_params = &function.sig.inputs;
     let function_vis = function.vis;
 
