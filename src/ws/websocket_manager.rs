@@ -67,18 +67,25 @@ impl WsManager {
     pub async fn new(token: &str) -> Result<Self> {
         Ok(Self {
             token: token.to_owned(),
-            socket: Self::connect_socket()
-                .await
-                .expect("Failed to connect to the gateway"),
+            socket: {
+                info!("Connecting to web socket");
+                Self::connect_socket()
+                    .await
+                    .expect("Failed to connect to the gateway")
+            },
             sequence: Arc::new(Mutex::new(0)),
         })
     }
 
     async fn connect_socket() -> Result<(SocketWrite, SocketRead)> {
-        let (socket, _response) = connect_async(consts::GATEWAY_URL).await?;
+        info!("...");
+
+        let (socket, _response) = connect_async(dbg!(consts::GATEWAY_URL)).await?;
 
         let (write, read) = socket.split();
         let (write, read) = (Arc::new(Mutex::new(write)), Arc::new(Mutex::new(read)));
+
+        info!("connected!");
 
         Ok((write, read))
     }
@@ -87,7 +94,13 @@ impl WsManager {
         let mut interval = 0;
         loop {
             let e = self.connect(intents, handlers.clone()).await;
-            dbg!(e);
+            info!("{e:?}");
+
+            if let Ok(false) = e {
+                info!("shutting down the bot");
+                break;
+            }
+
             error!("Connection closed");
             interval += 1;
             info!("Attempting to reconnect in {} seconds", interval);
@@ -96,7 +109,8 @@ impl WsManager {
         }
     }
 
-    async fn connect<'a>(&'a mut self, intents: u32, handlers: Handlers) -> Result<()> {
+    // if retuns Ok(false), then it shouldn't try to reconnect
+    async fn connect<'a>(&'a mut self, intents: u32, handlers: Handlers) -> Result<bool> {
         if let Some(Ok(Message::Text(body))) = self.socket.1.lock().await.next().await {
             let Some(payload) = Payload::parse(&body) else {
                 panic!("Failed to parse json, body: {body}");
@@ -135,41 +149,38 @@ impl WsManager {
                 };
 
                 info!("Opcode: {:?}", payload.operation_code);
-                match payload.operation_code {
-                    OpCode::Dispatch => {
-                        let current_seq = payload.sequence.unwrap_or(0);
-                        *self.sequence.lock().await = current_seq;
-                        info!(
-                            "Received {} event, sequence: {current_seq}",
-                            payload
-                                .type_name
-                                .as_ref()
-                                .map(|i| i.as_str())
-                                .unwrap_or("Unknown"),
-                            // For Debugging
-                            // json::parse(&payload.raw_json).unwrap().pretty(4)
-                        );
+                if let OpCode::Dispatch = payload.operation_code {
+                    let current_seq = payload.sequence.unwrap_or(0);
+                    *self.sequence.lock().await = current_seq;
+                    info!(
+                        "Received {} event, sequence: {current_seq}",
+                        payload.type_name.as_deref().unwrap_or("Unknown"),
+                        // For Debugging
+                        // json::parse(&payload.raw_json).unwrap().pretty(4)
+                    );
 
-                        let seq = Arc::clone(&self.sequence);
-                        let handlers = handlers.clone();
+                    let seq = Arc::clone(&self.sequence);
+                    let handlers = handlers.clone();
 
-                        tokio::spawn(async move {
-                            Self::dispatch_event(payload, seq, handlers)
-                                .await
-                                .expect("Failed to parse json response");
-                        });
-                    }
-
-                    _ => {}
+                    tokio::spawn(async move {
+                        Self::dispatch_event(payload, seq, handlers)
+                            .await
+                            .expect("Failed to parse json response");
+                    });
                 }
             } else {
-                break x;
+                error!(
+                    "Closing the connection, got the error: {:?}",
+                    x.unwrap().unwrap()
+                );
+
+                return Ok(false);
             }
         };
 
         info!("Exiting...");
 
-        Ok(())
+        Ok(true)
     }
 
     async fn dispatch_event(
