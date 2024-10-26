@@ -5,8 +5,9 @@ use super::message_response::{CreateMessageData, Message};
 
 #[derive(DeJson, SerJson, Debug, Clone)]
 pub struct Channel {
+    #[nserde(default)]
     pub id: String,
-    #[nserde(rename = "type")]
+    #[nserde(default, rename = "type")]
     pub channel_type: u32,
     pub guild_id: Option<String>,
     pub position: Option<usize>,
