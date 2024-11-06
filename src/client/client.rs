@@ -121,10 +121,6 @@ impl Client {
     /// Returns info about all registered message commands.
     /// Might be useful for creating a help command.
     pub fn get_commands(&self) -> Vec<CommandInfo> {
-        if self.commands.is_empty() {
-            log::warn!("No commands are registered make sure to call `enable_default_help` or `get_commands` after registering them.");
-        }
-
         self.commands
             .iter()
             .map(|(_, value)| CommandInfo {
