@@ -119,3 +119,25 @@ pub async fn create_role(
     ROLE_CACHE.lock().await.put(role.id.clone(), role.clone());
     Ok(role)
 }
+
+pub async fn add_role(
+    guild_id: &str,
+    user_id: &str,
+    role_id: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let url = format!("guilds/{guild_id}/members/{user_id}/roles/{role_id}");
+    let resp = request(Method::PUT, &url, None).await.error_for_status()?;
+    Ok(())
+}
+
+pub async fn remove_role(
+    guild_id: &str,
+    user_id: &str,
+    role_id: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let url = format!("guilds/{guild_id}/members/{user_id}/roles/{role_id}");
+    let resp = request(Method::DELETE, &url, None)
+        .await
+        .error_for_status()?;
+    Ok(())
+}
