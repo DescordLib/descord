@@ -122,7 +122,9 @@ pub struct Member {
     pub roles: Vec<String>,
     pub joined_at: String,
     pub premium_since: Option<String>,
+    #[nserde(default)]
     pub deaf: bool,
+    #[nserde(default)]
     pub mute: bool,
     pub flags: usize,
     #[nserde(default)]

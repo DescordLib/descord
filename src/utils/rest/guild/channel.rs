@@ -5,9 +5,9 @@ use super::*;
 /// Get a channel by ID
 pub async fn fetch_channel(channel_id: &str) -> Result<Channel, Box<dyn std::error::Error>> {
     // check if channel is in cache
-    if let Some(channel) = CHANNEL_CACHE.lock().unwrap().get(channel_id).cloned() {
-        return Ok(channel);
-    }
+    // if let Some(channel) = CHANNEL_CACHE.lock().unwrap().get(channel_id).cloned() {
+        // return Ok(channel);
+    // }
 
     let url = format!("channels/{channel_id}");
     let resp = request(Method::GET, &url, None).await.text().await?;
@@ -24,7 +24,7 @@ pub async fn fetch_channel(channel_id: &str) -> Result<Channel, Box<dyn std::err
     let mut channel_clone = channel.as_ref().cloned().unwrap(); // works
     let channel_id = channel_clone.id.clone();
 
-    CHANNEL_CACHE.lock().unwrap().put(channel_id, channel_clone);
+    // CHANNEL_CACHE.lock().unwrap().put(channel_id, channel_clone);
 
     channel
 }
@@ -35,7 +35,7 @@ pub async fn delete_channel(channel_id: &str) -> Result<(), Box<dyn std::error::
     let url = format!("channels/{channel_id}");
     request(Method::DELETE, &url, None).await.text().await?;
 
-    CHANNEL_CACHE.lock().unwrap().pop_entry(channel_id);
+    // CHANNEL_CACHE.lock().unwrap().pop_entry(channel_id);
 
     Ok(())
 }
