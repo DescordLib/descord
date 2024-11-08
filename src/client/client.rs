@@ -27,6 +27,7 @@ lazy_static::lazy_static! {
     static ref HELP_EMBED: tokio::sync::Mutex<Embed> = tokio::sync::Mutex::new(Embed::default());
 }
 
+/// The main client struct for interacting with the Discord API.
 pub struct Client {
     intents: u32,
     ws: ws::WsManager,
@@ -39,6 +40,19 @@ pub struct Client {
 }
 
 impl Client {
+    /// Creates a new client instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `token` - The bot token.
+    /// * `intents` - The gateway intents.
+    /// * `prefix` - The default prefix for message commands.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let client = Client::new("TOKEN", GatewayIntent::NON_PRIVILEGED, "!").await;
+    /// ```
     pub async fn new(token: &str, intents: impl Into<u32>, prefix: &str) -> Self {
         *TOKEN.lock().unwrap() = Some(token.to_owned());
 
@@ -57,6 +71,13 @@ impl Client {
         }
     }
 
+    /// Logs the client in and starts the event loop.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// client.login().await;
+    /// ```
     pub async fn login(mut self) {
         self.default_help().await;
         self.ws
@@ -72,10 +93,28 @@ impl Client {
             .await;
     }
 
+    /// Returns the bot token.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let token = client.token();
+    /// ```
     pub fn token(&self) -> &str {
         &self.token
     }
 
+    /// Registers event handlers.
+    ///
+    /// # Arguments
+    ///
+    /// * `events` - A vector of event handlers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// client.register_events(vec![events::ready(), events::message_create()]);
+    /// ```
     pub fn register_events(&mut self, events: Vec<EventHandler>) {
         events.into_iter().for_each(|event| {
             if self.event_handlers.contains_key(&event.event) {
@@ -86,11 +125,35 @@ impl Client {
         });
     }
 
+    /// Registers callbacks for message components such as message buttons.
+    ///
+    /// # Arguments
+    ///
+    /// * `commands` - A vector of component handlers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// client.register_component_callbacks(vec![components::btn1()]);
+    /// ```
     pub fn register_component_callbacks(&mut self, commands: Vec<ComponentHandler>) {
         self.component_handlers
             .extend(commands.into_iter().map(|d| (d.id.clone(), d)));
     }
 
+    /// Registers message commands.
+    /// Message commands are commands that are triggered by a message in a channel.
+    /// By default they use the prefix provided in the client constructor.
+    ///
+    /// # Arguments
+    ///
+    /// * `commands` - A vector of commands.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// client.register_commands(vec![commands::echo()]);
+    /// ```
     pub fn register_commands(&mut self, commands: Vec<Command>) {
         if self.intents & GatewayIntent::MESSAGE_CONTENT == 0 {
             log::error!("MESSAGE_CONTENT intent is required for message commands to work");
@@ -110,6 +173,17 @@ impl Client {
         });
     }
 
+    /// Registers slash commands.
+    ///
+    /// # Arguments
+    ///
+    /// * `commands` - A vector of slash commands.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// client.register_slash_commands(vec![commands::avatar()]).await;
+    /// ```
     pub async fn register_slash_commands(&mut self, commands: Vec<SlashCommand>) {
         self.slash_commands.extend(
             utils::slash::register_slash_commands(commands)
@@ -119,7 +193,14 @@ impl Client {
     }
 
     /// Returns info about all registered message commands.
+    ///
     /// Might be useful for creating a help command.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let commands = client.get_commands();
+    /// ```
     pub fn get_commands(&self) -> Vec<CommandInfo> {
         self.commands
             .iter()
@@ -132,7 +213,14 @@ impl Client {
     }
 
     /// Returns info about all registered slash commands.
+    ///
     /// Might be useful for creating a help command.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let slash_commands = client.get_slash_commands();
+    /// ```
     pub fn get_slash_commands(&self) -> Vec<SlashCommandInfo> {
         if self.commands.is_empty() {
             log::warn!("No slash commands are registered make sure to call `enable_default_help` or `get_slash_commands` after registering them.");
@@ -208,6 +296,7 @@ impl Client {
     }
 }
 
+/// Information about a registered command.
 #[derive(Debug, Clone)]
 pub struct CommandInfo {
     pub name: String,
@@ -215,6 +304,7 @@ pub struct CommandInfo {
     pub params: Vec<ParamType>,
 }
 
+/// Information about a registered slash command.
 #[derive(Debug, Clone)]
 pub struct SlashCommandInfo {
     pub name: String,

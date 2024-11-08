@@ -5,9 +5,29 @@ use super::{
     emoji::Emoji,
 };
 
+/// A builder for creating components.
 pub struct ComponentBuilder;
 
 impl ComponentBuilder {
+    /// Creates a button component.
+    ///
+    /// # Arguments
+    ///
+    /// * `button` - The button object.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let button = ButtonObject {
+    ///     style: ButtonStyle::Primary,
+    ///     label: Some("Click me".to_string()),
+    ///     emoji: None,
+    ///     custom_id: Some("button1".to_string()),
+    ///     url: None,
+    ///     disabled: false,
+    /// };
+    /// let component = ComponentBuilder::button(button).unwrap();
+    /// ```
     pub fn button(button: ButtonObject) -> Result<Component, &'static str> {
         button.verify()?;
 
@@ -39,6 +59,28 @@ impl ComponentBuilder {
         })
     }
 
+    /// Creates a select component.
+    ///
+    /// # Arguments
+    ///
+    /// * `select` - The select object.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let select = SelectObject {
+    ///     select_type: 3,
+    ///     custom_id: "select1".to_string(),
+    ///     options: Some(vec![]),
+    ///     channel_types: None,
+    ///     placeholder: Some("Choose an option".to_string()),
+    ///     default_values: None,
+    ///     min_values: None,
+    ///     max_values: None,
+    ///     disabled: false,
+    /// };
+    /// let component = ComponentBuilder::select(select).unwrap();
+    /// ```
     pub fn select(select: SelectObject) -> Result<Component, &'static str> {
         select.verify()?;
 

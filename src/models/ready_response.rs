@@ -2,12 +2,14 @@ use nanoserde::{DeJson, SerJson};
 
 use super::{guild::PartialGuild, user::User};
 
+/// Represents a ready response.
 #[derive(DeJson, SerJson, Debug)]
 pub struct ReadyResponse {
     #[nserde(rename = "d")]
     pub data: ReadyData,
 }
 
+/// Represents general startup data about the bot.
 #[derive(DeJson, SerJson, Debug, Clone)]
 pub struct ReadyData {
     pub user: User,
@@ -19,6 +21,7 @@ pub struct ReadyData {
     pub application: ApplicationData,
 }
 
+/// Represents data about the bot application.
 #[derive(DeJson, SerJson, Debug, Clone)]
 pub struct ApplicationData {
     pub id: String,
