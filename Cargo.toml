@@ -2,7 +2,7 @@ workspace = { members = ["examples/quickstart"] }
 
 [package]
 name = "descord"
-version = "0.1.10"
+version = "0.1.11"
 edition = "2021"
 license = "GPL-3.0-only"
 description = "A minimal discord api wrapper."
