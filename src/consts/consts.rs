@@ -16,6 +16,20 @@ pub enum ImageFormat {
     Lottie,
 }
 
+#[repr(u32)]
+#[derive(Debug, Clone, Copy)]
+pub enum ImageSize {
+    X16 = 16,
+    X32 = 32,
+    X64 = 64,
+    X128 = 128,
+    X256 = 256,
+    X512 = 512,
+    X1024 = 1024,
+    X2048 = 2048,
+    X4096 = 4096,
+}
+
 impl ImageFormat {
     pub fn get_extension(&self) -> &'static str {
         match self {
