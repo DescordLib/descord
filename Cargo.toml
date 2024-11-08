@@ -9,7 +9,7 @@ repository = "https://github.com/thatmagicalcat/descord"
 readme = "README.md"
 
 [dependencies]
-descord-macros = { version = "0.1.4", path = "macros" }
+descord-macros = { version = "0.1.5", path = "macros" }
 dotenvy = "0.15.7"
 env_logger = "0.11.3"
 futures-util = "0.3.30"
