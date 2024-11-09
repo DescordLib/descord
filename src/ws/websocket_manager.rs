@@ -80,7 +80,7 @@ impl WsManager {
     async fn connect_socket() -> Result<(SocketWrite, SocketRead)> {
         info!("...");
 
-        let (socket, _response) = connect_async(dbg!(consts::GATEWAY_URL)).await?;
+        let (socket, _response) = connect_async(consts::GATEWAY_URL).await?;
 
         let (write, read) = socket.split();
         let (write, read) = (Arc::new(Mutex::new(write)), Arc::new(Mutex::new(read)));
