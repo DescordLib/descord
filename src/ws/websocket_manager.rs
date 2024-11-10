@@ -359,7 +359,17 @@ impl WsManager {
             }
 
             Event::InteractionCreate => {
-                let data = InteractionResponsePayload::deserialize_json(&payload.raw_json).unwrap();
+                // A band-aid solution
+                let mut json = json::parse(&payload.raw_json).unwrap();
+                let json::JsonValue::Array(options) = &mut json["d"]["data"]["options"] else {
+                    panic!();
+                };
+
+                for option in options {
+                    option["value"] = json::JsonValue::String(option["value"].to_string());
+                }
+
+                let data = InteractionResponsePayload::deserialize_json(&json.dump()).unwrap();
 
                 if data.data.type_ == InteractionType::ApplicationCommand as u32 {
                     if let Some(d) = &data.data.data {
