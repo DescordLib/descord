@@ -110,7 +110,7 @@ impl WsManager {
     }
 
     // if retuns Ok(false), then it shouldn't try to reconnect
-    async fn connect<'a>(&'a mut self, intents: u32, handlers: Handlers) -> Result<bool> {
+    async fn connect(&mut self, intents: u32, handlers: Handlers) -> Result<bool> {
         if let Some(Ok(Message::Text(body))) = self.socket.1.lock().await.next().await {
             let Some(payload) = Payload::parse(&body) else {
                 panic!("Failed to parse json, body: {body}");
@@ -136,11 +136,7 @@ impl WsManager {
             }
         }
 
-        // while let e @ Some(Ok(Message::Text(ref body))) = self.socket.1.lock().await.next().await {
-
-        // TODO: what if its an internet connection problem?
-        // will handle that in the future
-        let err = loop {
+        loop {
             let x = self.socket.1.lock().await.next().await;
             if let Some(Ok(Message::Text(body))) = x {
                 let Some(payload) = Payload::parse(&body) else {
@@ -162,6 +158,13 @@ impl WsManager {
                     let seq = Arc::clone(&self.sequence);
                     let handlers = handlers.clone();
 
+                    if matches!(
+                        Event::from_str(payload.type_name.as_ref().unwrap().as_str()),
+                        Ok(Event::Reconnect)
+                    ) {
+                        self.socket = Self::reconnect(Arc::clone(&self.sequence)).await;
+                    }
+
                     tokio::spawn(async move {
                         Self::dispatch_event(payload, seq, handlers)
                             .await
@@ -169,14 +172,17 @@ impl WsManager {
                     });
                 }
             } else {
-                error!(
-                    "Closing the connection, got the error: {:?}",
-                    x.unwrap().unwrap()
-                );
+                match x.unwrap().unwrap() {
+                    Message::Close(Some(cf)) => {
+                        self.socket = Self::reconnect(Arc::clone(&self.sequence)).await;
+                    }
+
+                    x => error!("Closing the connection, got the error: {x:?}",),
+                }
 
                 return Ok(false);
             }
-        };
+        }
 
         info!("Exiting...");
 
@@ -225,7 +231,7 @@ impl WsManager {
                         let mut required_permissions: u64 = 0;
 
                         for permission in &command_handler_fn.permissions {
-                            required_permissions |= consts::permissions::parse(&permission)
+                            required_permissions |= consts::permissions::parse(permission)
                                 .expect("Invalid permission name");
                         }
 
@@ -309,10 +315,7 @@ impl WsManager {
             }
 
             Event::Reconnect => {
-                Self::reconnect(seq).await;
-
-                let data = Reconnect::deserialize_json(&payload.raw_json).unwrap();
-                data.into()
+                unreachable!("Reconnecting is already handled before this function call")
             }
 
             Event::GuildRoleCreate => {
@@ -510,7 +513,7 @@ impl WsManager {
 
         // Aggregate permissions from member's roles
         for role_id in &roles {
-            if let Some(role) = guild.fetch_role(role_id).await.ok() {
+            if let Ok(role) = guild.fetch_role(role_id).await {
                 base_permissions |= role.permissions.parse::<u64>().unwrap();
             }
         }
