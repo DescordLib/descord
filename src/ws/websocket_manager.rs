@@ -252,7 +252,10 @@ impl WsManager {
                             )
                             .await;
 
-                            if user_permissions & required_permissions != required_permissions {
+                            // bypass the role check if user has admin perms
+                            if user_permissions != consts::permissions::ADMINISTRATOR
+                                && user_permissions & required_permissions != required_permissions
+                            {
                                 utils::send(
                                     &channel_id,
                                     Some(
