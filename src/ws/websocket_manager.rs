@@ -45,7 +45,7 @@ use futures_util::{future, pin_mut, SinkExt, StreamExt};
 
 use crate::consts::opcode::OpCode;
 use crate::consts::{self, payloads, InteractionCallbackType, InteractionType};
-use crate::handlers::events::Event;
+use crate::consts::events::Event;
 use crate::utils::{fetch_channel, fetch_guild, fetch_member, request};
 use crate::ws::payload::Payload;
 use crate::Client;

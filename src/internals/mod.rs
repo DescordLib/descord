@@ -10,7 +10,7 @@ pub use components::*;
 pub use events::*;
 pub use slash_commands::*;
 
-use crate::handlers::events::Event;
+use crate::consts::events::Event;
 use crate::models::channel::Channel;
 use crate::models::deleted_message_response::DeletedMessage;
 use crate::models::interaction::{Interaction, InteractionData};
