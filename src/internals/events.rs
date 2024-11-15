@@ -11,6 +11,8 @@ implemented_enum! {
         RoleDelete,
         RoleEvent,
         Reconnect,
+        Member,
+        MemberLeave,
     }
 }
 

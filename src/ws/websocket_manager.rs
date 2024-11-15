@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use std::{clone, thread};
 
-use guild::{GuildCreate, GuildCreateResponse};
+use guild::{GuildCreate, GuildCreateResponse, Member, MemberLeave};
 use log::*;
 use nanoserde::{DeJson, SerJson};
 use reqwest::{Method, Url};
@@ -289,6 +289,16 @@ impl WsManager {
                     .put(message_data.data.id.clone(), message_data.data.clone());
 
                 message_data.data.into()
+            }
+
+            Event::GuildMemberRemove => {
+                let data = MemberLeave::deserialize_json(&payload.raw_json).unwrap();
+                data.into()
+            }
+
+            Event::GuildMemberAdd => {
+                let data = Member::deserialize_json(&payload.raw_json).unwrap();
+                data.into()
             }
 
             Event::MessageDelete => {
