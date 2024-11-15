@@ -20,6 +20,16 @@ async fn main() {
     client.login().await;
 }
 
+#[event]
+async fn member_join(member: Member) {
+    println!("A member joined! {}", member.user.unwrap().username);
+}
+
+#[event]
+async fn member_leave(member: MemberLeave) {
+    println!("A member left :(\n{}", member.user.username);
+}
+
 #[command(description = "Send a message with two attachments")]
 async fn send_attach(msg: Message) {
     msg.reply(CreateMessageData {
