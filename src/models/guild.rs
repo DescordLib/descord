@@ -181,6 +181,16 @@ pub struct PartialGuild {
     pub id: String,
 }
 
+/// Represents a member who left the guild (kick/leave/ban)
+#[derive(DeJson, SerJson, Debug, Clone)]
+pub struct MemberLeave { // TODO: better naming?
+    /// ID of the guild
+    pub guild_id: String,
+    /// The user who was removed
+    pub user: User,
+}
+
+
 /// Represents a member of a guild.
 #[derive(DeJson, SerJson, Debug, Clone)]
 pub struct Member {
@@ -218,6 +228,10 @@ pub struct Member {
     /// The mention string for the member.
     #[nserde(default)]
     pub mention: String,
+
+    /// Id of the guild, available in guild member update events.
+    #[nserde(default)]
+    pub guild_id: Option<String>,
 }
 
 impl Guild {
