@@ -115,6 +115,8 @@ event_handler_args![
     reaction_add       => MessageReactionAdd : Reaction,
     guild_create       => GuildCreate        : GuildCreate,
     interaction_create => InteractionCreate  : Interaction,
+    member_join        => GuildMemberAdd     : Member,
+    member_leave       => GuildMemberRemove  : MemberLeave,
 ];
 
 #[derive(Debug, FromMeta)]
