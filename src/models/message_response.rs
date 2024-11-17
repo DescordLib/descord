@@ -109,6 +109,11 @@ impl Message {
         utils::fetch_channel(&self.channel_id).await
     }
 
+    /// Sends typing indicator.
+    pub async fn send_typing(&self) -> Result<(), Box<dyn Error>> {
+        utils::send_typing(&self.channel_id).await
+    }
+
     /// Get the message author.
     ///
     /// # Examples

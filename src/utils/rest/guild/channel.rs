@@ -6,7 +6,7 @@ use super::*;
 pub async fn fetch_channel(channel_id: &str) -> Result<Channel, Box<dyn std::error::Error>> {
     // check if channel is in cache
     // if let Some(channel) = CHANNEL_CACHE.lock().unwrap().get(channel_id).cloned() {
-    // return Ok(channel);
+        // return Ok(channel);
     // }
 
     let url = format!("channels/{channel_id}");
@@ -57,7 +57,7 @@ pub async fn send_typing(channel_id: &str) -> Result<(), Box<dyn std::error::Err
 pub async fn update_channel(channel: Channel) -> Result<(), Box<dyn std::error::Error>> {
     let channel_id = &channel.id;
     let url = format!("channels/{channel_id}");
-    request(Method::PATCH, &url, Some(&channel.serialize_json()));
+    request(Method::PATCH, &url, Some(&channel.serialize_json())).await;
 
     Ok(())
 }
