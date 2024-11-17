@@ -1,12 +1,12 @@
 mod misc;
 pub use misc::*;
 
+pub mod color;
 pub mod events;
+pub mod intents;
 pub mod opcode;
 pub mod payloads;
 pub mod permissions;
-pub mod color;
-pub mod intents;
 pub mod reaction;
 
 #[allow(non_snake_case)]

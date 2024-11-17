@@ -98,9 +98,9 @@ pub mod models;
 pub mod utils;
 pub use client::Client;
 pub use consts::color;
+pub use consts::events::Event;
 pub use consts::intents;
 pub use descord_macros::*;
-pub use consts::events::Event;
 pub use ws::payload::Payload;
 pub mod internals;
 

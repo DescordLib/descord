@@ -43,9 +43,9 @@ use tokio_tungstenite::{connect_async, WebSocketStream};
 use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{future, pin_mut, SinkExt, StreamExt};
 
+use crate::consts::events::Event;
 use crate::consts::opcode::OpCode;
 use crate::consts::{self, payloads, InteractionCallbackType, InteractionType};
-use crate::consts::events::Event;
 use crate::utils::{fetch_channel, fetch_guild, fetch_member, request};
 use crate::ws::payload::Payload;
 use crate::Client;
@@ -430,11 +430,7 @@ impl WsManager {
                                     data.data.id, data.data.token
                                 ),
                                 Some(
-                                    json::parse(
-                                        &InteractionAutoCompleteChoices::new(choices)
-                                            .serialize_json(),
-                                    )
-                                    .unwrap(),
+                                    &InteractionAutoCompleteChoices::new(choices).serialize_json(),
                                 ),
                             )
                             .await;

@@ -1,8 +1,10 @@
 use super::*;
 
-pub type ComponentHandlerFn =
-    fn(Interaction) -> std::pin::Pin<Box<dyn futures_util::Future<Output = DescordResult> + Send + 'static>>;
-
+pub type ComponentHandlerFn = fn(
+    Interaction,
+) -> std::pin::Pin<
+    Box<dyn futures_util::Future<Output = DescordResult> + Send + 'static>,
+>;
 
 #[derive(Debug, Clone)]
 pub struct ComponentHandler {

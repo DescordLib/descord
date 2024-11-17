@@ -1,17 +1,21 @@
 use super::*;
 
-pub async fn request(method: Method, endpoint: &str, data: Option<JsonValue>) -> Response {
+pub async fn request<T: AsRef<str>>(method: Method, endpoint: T, data: Option<T>) -> Response {
     let client = Client::new();
-    let url = format!("{}/{}", API, endpoint);
+    let url = format!("{}/{}", API, endpoint.as_ref());
 
     let mut request_builder = client.request(method, &url);
     request_builder = request_builder.headers(get_headers());
 
     if let Some(body) = data {
-        request_builder = request_builder.body(body.to_string());
+        request_builder = request_builder.body(body.as_ref().to_string());
     }
 
-    let bucket = ENDPOINT_BUCKET_MAP.lock().await.get(endpoint).cloned();
+    let bucket = ENDPOINT_BUCKET_MAP
+        .lock()
+        .await
+        .get(endpoint.as_ref())
+        .cloned();
     let seen;
     if let Some(bucket) = bucket {
         wait_for_rate_limit(&bucket).await;
@@ -31,9 +35,10 @@ pub async fn request(method: Method, endpoint: &str, data: Option<JsonValue>) ->
 
         log::warn!(
             "Rate limited on endpoint: {}, retrying after {} seconds",
-            endpoint,
+            endpoint.as_ref(),
             retry_after
         );
+
         sleep(Duration::from_secs_f32(retry_after)).await;
         response = request_builder.try_clone().unwrap().send().await.unwrap();
     }
@@ -45,7 +50,7 @@ pub async fn request(method: Method, endpoint: &str, data: Option<JsonValue>) ->
             ENDPOINT_BUCKET_MAP
                 .lock()
                 .await
-                .put(endpoint.to_string(), bucket.to_string());
+                .put(endpoint.as_ref().to_string(), bucket.to_string());
         }
     }
 
@@ -122,7 +127,7 @@ pub async fn fetch_dm(user_id: &str) -> DirectMessageChannel {
         recipient_id: user_id
     });
 
-    let response = request(Method::POST, &url, Some(json::parse(&data).unwrap())).await;
+    let response = request(Method::POST, &url, Some(&data)).await;
     DirectMessageChannel::deserialize_json(&response.text().await.unwrap()).unwrap()
 }
 

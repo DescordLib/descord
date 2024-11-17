@@ -82,8 +82,8 @@ impl Interaction {
 
         request(
             Method::POST,
-            format!("interactions/{}/{}/callback", self.id, self.token).as_str(),
-            Some(JsonValue::from(json_response)),
+            format!("interactions/{}/{}/callback", self.id, self.token),
+            Some(json_response),
         )
         .await;
     }
@@ -104,8 +104,8 @@ impl Interaction {
 
         request(
             Method::POST,
-            format!("interactions/{}/{}/callback", self.id, self.token).as_str(),
-            Some(JsonValue::from(json_response)),
+            format!("interactions/{}/{}/callback", self.id, self.token),
+            Some(json_response),
         )
         .await;
     }
@@ -124,10 +124,13 @@ impl Interaction {
     pub async fn followup<S: AsRef<str>>(&self, response: S) {
         request(
             Method::POST,
-            format!("webhooks/{}/{}", self.application_id, self.token).as_str(),
-            Some(json::object! {
-                content: response.as_ref(),
-            }),
+            format!("webhooks/{}/{}", self.application_id, self.token),
+            Some(
+                json::object! {
+                    content: response.as_ref(),
+                }
+                .dump(),
+            ),
         )
         .await;
     }
@@ -151,9 +154,8 @@ impl Interaction {
             format!(
                 "webhooks/{}/{}/messages/@original",
                 self.application_id, self.token
-            )
-            .as_str(),
-            Some(json::parse(&response.serialize_json()).unwrap()),
+            ),
+            Some(response.serialize_json()),
         )
         .await;
 

@@ -183,13 +183,13 @@ pub struct PartialGuild {
 
 /// Represents a member who left the guild (kick/leave/ban)
 #[derive(DeJson, SerJson, Debug, Clone)]
-pub struct MemberLeave { // TODO: better naming?
+pub struct MemberLeave {
+    // TODO: better naming?
     /// ID of the guild
     pub guild_id: String,
     /// The user who was removed
     pub user: User,
 }
-
 
 /// Represents a member of a guild.
 #[derive(DeJson, SerJson, Debug, Clone)]

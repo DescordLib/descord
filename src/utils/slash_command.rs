@@ -64,7 +64,7 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
     for local_command in &commands {
         let mut permissions: u64 = 0;
         for permission in &local_command.permissions {
-            let permission = perms::parse(&permission).expect("unknown permission name");
+            let permission = perms::parse(permission).expect("unknown permission name");
             permissions |= permission;
         }
 
@@ -107,19 +107,23 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
                 .as_ref()
                 .unwrap_or(&vec![])
                 .iter()
-                .map(|opt| CommandOption::from_registered(opt))
+                .map(CommandOption::from_registered)
                 .collect::<Vec<_>>();
 
             if local_options != registered_options {
                 request(
                     Method::PATCH,
                     format!("applications/{}/commands/{}", bot_id, registered_command.id).as_str(),
-                    Some(json::object! {
-                        name: local_command.name.clone(),
-                        description: local_command.description.clone(),
-                        options: options,
-                        default_member_permissions: permissions.to_string(),
-                    }),
+                    Some(
+                        json::object! {
+                            name: local_command.name.clone(),
+                            description: local_command.description.clone(),
+                            options: options,
+                            default_member_permissions: permissions.to_string(),
+                        }
+                        .dump()
+                        .as_str(),
+                    ),
                 )
                 .await;
 
@@ -141,13 +145,16 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
             // If the command does not exist in the fetched commands, register it
             let response = request(
                 Method::POST,
-                format!("applications/{}/commands", bot_id).as_str(),
-                Some(json::object! {
-                    name: local_command.name.clone(),
-                    description: local_command.description.clone(),
-                    options: options,
-                    default_member_permissions: permissions.to_string(),
-                }),
+                format!("applications/{}/commands", bot_id),
+                Some(
+                    json::object! {
+                        name: local_command.name.clone(),
+                        description: local_command.description.clone(),
+                        options: options,
+                        default_member_permissions: permissions.to_string(),
+                    }
+                    .dump(),
+                ),
             )
             .await
             .text()
@@ -170,10 +177,9 @@ pub async fn register_slash_commands(commands: Vec<SlashCommand>) -> HashMap<Str
 
     for registered_command in registered_commands {
         // If the command does not exist in the local commands, remove it
-        if commands
+        if !commands
             .iter()
-            .find(|&cmd| cmd.name == registered_command.name)
-            .is_none()
+            .any(|cmd| cmd.name == registered_command.name)
         {
             request(
                 Method::DELETE,

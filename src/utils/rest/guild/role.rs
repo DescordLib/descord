@@ -73,7 +73,7 @@ pub async fn edit_role_position(
 ) -> Result<Role, Box<dyn std::error::Error>> {
     let url = format!("guilds/{guild_id}/roles/{role_id}");
     let body = object! { "position": position };
-    let resp = request(Method::PATCH, &url, Some(body))
+    let resp = request(Method::PATCH, url, Some(body.dump()))
         .await
         .text()
         .await
@@ -110,12 +110,14 @@ pub async fn create_role(
         "hoist": hoist,
         "mentionable": mentionable,
     };
-    let resp = request(Method::POST, &url, Some(body))
+
+    let resp = request(Method::POST, url, Some(body.dump()))
         .await
         .text()
         .await
         .unwrap();
     let role: Role = DeJson::deserialize_json(&resp).unwrap();
+
     ROLE_CACHE.lock().await.put(role.id.clone(), role.clone());
     Ok(role)
 }

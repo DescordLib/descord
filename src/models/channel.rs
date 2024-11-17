@@ -4,7 +4,7 @@ use nanoserde::{DeJson, SerJson};
 use super::message_response::{CreateMessageData, Message};
 
 /// Represents a Discord channel.
-#[derive(DeJson, SerJson, Debug, Clone)]
+#[derive(DeJson, SerJson, Debug, Clone, Default)]
 pub struct Channel {
     /// The unique ID of the channel.
     #[nserde(default)]

@@ -8,9 +8,7 @@ async fn main() {
 
     let mut client = Client::new(
         &std::env::var("DISCORD_TOKEN").expect("Expected a token in the environment"),
-        GatewayIntent::NON_PRIVILEGED
-        // for message commands
-            | GatewayIntent::MESSAGE_CONTENT,
+        GatewayIntent::ALL,
         "!",
     )
     .await;

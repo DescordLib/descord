@@ -18,12 +18,7 @@ pub async fn edit_message(channel_id: &str, message_id: &str, data: impl Into<Cr
     let url = format!("channels/{channel_id}/messages/{message_id}");
     let data: CreateMessageData = data.into();
 
-    request(
-        Method::PATCH,
-        &url,
-        Some(json::parse(&data.to_json()).unwrap()),
-    )
-    .await;
+    request(Method::PATCH, &url, Some(&data.to_json())).await;
 }
 
 /// Gets a message by ID.

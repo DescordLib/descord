@@ -226,7 +226,9 @@ impl Client {
             log::warn!("No slash commands are registered make sure to call `enable_default_help` or `get_slash_commands` after registering them.");
         }
 
-        self.slash_commands.values().map(|value| SlashCommandInfo {
+        self.slash_commands
+            .values()
+            .map(|value| SlashCommandInfo {
                 name: value.name.clone(),
                 description: value.description.clone(),
                 params: value
