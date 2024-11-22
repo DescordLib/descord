@@ -27,3 +27,23 @@ pub async fn fetch_member(
     member.mention = format!("<@{}>", user_id);
     Ok(member)
 }
+
+/// Kick a user.
+/// Requires KICK_MEMBERS permission.
+pub async fn kick_member(
+    guild_id: &str,
+    user_id: &str,
+    reason: Option<String>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let url = format!("guilds/{guild_id}/members/{user_id}");
+
+    if let Some(reason) = reason {
+        let mut header = HeaderMap::new();
+        header.insert("X-Audit-Log-Reason", reason.parse().unwrap());
+        request_with_headers(Method::DELETE, url, None, header);
+    } else {
+        request(Method::DELETE, url, None);
+    }
+
+    Ok(())
+}

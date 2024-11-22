@@ -1,11 +1,36 @@
 use super::*;
 
+pub async fn request_with_headers<T: AsRef<str>>(
+    method: Method,
+    endpoint: T,
+    data: Option<T>,
+    headers: HeaderMap<HeaderValue>,
+) -> Response {
+    let mut h = get_headers();
+    for (k, v) in headers.into_iter() {
+        if let Some(k) = k {
+            h.insert(k, v);
+        }
+    }
+
+    request_int(method, endpoint, data, h).await
+}
+
 pub async fn request<T: AsRef<str>>(method: Method, endpoint: T, data: Option<T>) -> Response {
+    request_int(method, endpoint, data, get_headers()).await
+}
+
+async fn request_int<T: AsRef<str>>(
+    method: Method,
+    endpoint: T,
+    data: Option<T>,
+    headers: HeaderMap<HeaderValue>,
+) -> Response {
     let client = Client::new();
     let url = format!("{}/{}", API, endpoint.as_ref());
 
     let mut request_builder = client.request(method, &url);
-    request_builder = request_builder.headers(get_headers());
+    request_builder = request_builder.headers(headers);
 
     if let Some(body) = data {
         request_builder = request_builder.body(body.as_ref().to_string());
