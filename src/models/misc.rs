@@ -2,7 +2,7 @@ use nanoserde::{DeJson, SerJson};
 
 #[derive(DeJson, SerJson, Debug, Clone)]
 pub struct ResponseWrapper<T: DeJson + SerJson> {
-    #[nserde(rename = "data")]
+    #[nserde(rename = "d")]
     pub data: T,
 }
 
