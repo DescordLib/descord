@@ -202,6 +202,7 @@ pub struct Member {
     #[nserde(rename = "avatar")]
     pub guild_avatar_hash: Option<String>,
     /// The roles of the member.
+    #[nserde(default)]
     pub roles: Vec<String>,
     /// The timestamp when the member joined the guild.
     pub joined_at: String,
@@ -214,6 +215,7 @@ pub struct Member {
     #[nserde(default)]
     pub mute: bool,
     /// The flags of the member.
+    #[nserde(default)]
     pub flags: usize,
     /// Whether the member is pending verification.
     #[nserde(default)]
