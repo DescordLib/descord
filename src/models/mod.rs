@@ -13,9 +13,10 @@ pub mod guild;
 pub mod guild_create;
 pub mod interaction;
 pub mod message_response;
-pub mod misc;
 pub mod reaction_response;
 pub mod ready_response;
 pub mod role;
 pub mod role_response;
 pub mod user;
+
+pub(crate) mod misc;

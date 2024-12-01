@@ -292,13 +292,17 @@ impl WsManager {
             }
 
             Event::GuildMemberRemove => {
-                let data = MemberLeave::deserialize_json(&payload.raw_json).unwrap();
-                data.into()
+                let data: misc::ResponseWrapper<MemberLeave> =
+                    DeJson::deserialize_json(&payload.raw_json).unwrap();
+                data.data.into()
             }
 
             Event::GuildMemberAdd => {
-                let data = Member::deserialize_json(&payload.raw_json).unwrap();
-                data.into()
+                info!("{}", payload.raw_json);
+                let data: misc::ResponseWrapper<Member> =
+                    DeJson::deserialize_json(&payload.raw_json).unwrap();
+
+                data.data.into()
             }
 
             Event::MessageDelete => {
