@@ -197,6 +197,7 @@ pub struct Member {
     /// The user associated with the member.
     pub user: Option<User>,
     /// The nickname of the member.
+    #[nserde(default)]
     pub nick: Option<String>,
     /// The hash of the member's guild avatar.
     #[nserde(rename = "avatar")]
@@ -205,8 +206,11 @@ pub struct Member {
     #[nserde(default)]
     pub roles: Vec<String>,
     /// The timestamp when the member joined the guild.
-    pub joined_at: String,
+    /// `None` if its from guild member add event.
+    #[nserde(default)]
+    pub joined_at: Option<String>,
     /// The timestamp when the member started boosting the guild.
+    #[nserde(default)]
     pub premium_since: Option<String>,
     /// Whether the member is deafened.
     #[nserde(default)]
@@ -221,6 +225,7 @@ pub struct Member {
     #[nserde(default)]
     pub pending: Option<bool>,
     /// The permissions of the member.
+    #[nserde(default)]
     pub permissions: Option<String>,
     /// The timestamp when the member's communication is disabled until.
     #[nserde(rename = "communication_disabled_until")]
