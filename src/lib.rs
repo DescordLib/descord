@@ -90,19 +90,22 @@
 #![allow(unused)]
 
 mod client;
-mod consts;
 mod ws;
+mod consts;
 
 pub mod models;
 
+/// Contains all the implemented rest api endpoints
 pub mod utils;
+
 pub use client::Client;
-pub use consts::color;
-pub use consts::events::Event;
-pub use consts::intents;
+
 pub use descord_macros::*;
 pub use ws::payload::Payload;
 pub mod internals;
+
+pub use consts::events::Event;
+pub use consts::color;
 
 // TODO: change the error type
 pub type DescordResult = Result<(), Box<dyn std::error::Error + Send>>;
@@ -112,13 +115,13 @@ pub(crate) mod cache;
 pub mod prelude {
     pub use super::*;
     pub use super::{
-        color::*,
         consts::permissions,
         consts::ButtonStyle,
         consts::ComponentType,
         consts::ImageFormat,
         consts::SelectMenuType,
-        intents::GatewayIntent,
+        consts::intents::GatewayIntent,
+        consts::color::Color,
         models::{
             channel::*, channel::*, component_builder::*, components::*, embed::*,
             embed_builder::*, guild::*, interaction::*, message_response::CreateMessageData,

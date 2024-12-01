@@ -40,9 +40,9 @@ pub async fn kick_member(
     if let Some(reason) = reason {
         let mut header = HeaderMap::new();
         header.insert("X-Audit-Log-Reason", reason.parse().unwrap());
-        request_with_headers(Method::DELETE, url, None, header);
+        request_with_headers(Method::DELETE, url, None, header).await;
     } else {
-        request(Method::DELETE, url, None);
+        request(Method::DELETE, url, None).await;
     }
 
     Ok(())

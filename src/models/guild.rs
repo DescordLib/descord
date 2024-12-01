@@ -186,7 +186,7 @@ pub struct PartialGuild {
 pub struct MemberLeave {
     // TODO: better naming?
     /// ID of the guild
-    pub guild_id: String,
+    pub guild_id: Option<String>,
     /// The user who was removed
     pub user: User,
 }

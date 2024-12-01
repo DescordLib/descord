@@ -6,6 +6,6 @@ use rest as rest_api;
 
 pub use permissions::*;
 pub use rest_api::*;
-pub mod slash {
-    pub use super::slash_command::*;
+pub(crate) mod slash {
+    pub(crate) use super::slash_command::*;
 }

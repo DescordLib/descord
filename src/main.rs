@@ -152,7 +152,7 @@ async fn counter(msg: Message) {
 #[command(description = "React to the message with the given emoji")]
 async fn react(msg: Message, emoji: String) {
     println!("reacting");
-    msg.react(&emoji).await;
+    msg.react(emoji).await;
 }
 
 #[event]
@@ -161,6 +161,11 @@ async fn ready(data: ReadyData) {
         "Logged in as: {}#{}",
         data.user.username, data.user.discriminator
     );
+}
+
+#[event]
+async fn guild_create(guild: GuildCreate) {
+    // println!("{:?}", guild.members);
 }
 
 #[event]
@@ -186,6 +191,12 @@ async fn reaction_add(reaction: Reaction) {
             msg.edit(format!("{counter_message} {count}"))
         );
     }
+}
+
+#[command]
+async fn kick(msg: Message, user: User) {
+    msg.reply("kicking").await;
+    utils::kick_member(msg.guild_id.as_ref().unwrap(), &user.id, None).await.unwrap();
 }
 
 #[component(id = "btn1")]
